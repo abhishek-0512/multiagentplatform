@@ -14,6 +14,7 @@ app.use(cors(
 ))
 app.use(cookieParser())
 app.use("/auth",proxy(process.env.AUTH_SERVICE))
+app.use("/chat",proxyWithHeader(process.env.CHAT_SERVICE))
 app.get("/",(req,res)=>{
   res.json({message:" hello from gateway"})
 })
