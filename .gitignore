@@ -28,3 +28,4 @@ build/
 .vscode/
 .idea/
 
+backend/services/auth/serviceAccountKey.json
