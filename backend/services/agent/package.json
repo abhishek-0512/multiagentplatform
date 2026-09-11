@@ -11,6 +11,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@langchain/core": "^1.2.10",
+    "@langchain/langgraph": "^1.4.14",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.10.0",
