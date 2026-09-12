@@ -9,6 +9,7 @@ export const agent=async (req,res,next) => {
         const {prompt,conversationId,agent}=req.body
         const file=req.file
         console.log("file",file)
+        const userId = req.headers["x-user-id"]
         const chatServiceUrl = process.env.CHAT_SERVICE || "http://127.0.0.1:8002"
         await axios.post(`${chatServiceUrl}/save-message`,{
             conversationId,role:"user",content:prompt
