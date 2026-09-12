@@ -9,17 +9,23 @@ import { getCurrentUser } from "./controllers/user.controller.js"
 import { proxyWithHeader } from "./utils/proxyWithHeader.js"
 const port =process.env.PORT
 const app=express()
-app.use(cors(
-  {
-    origin:process.env.FRONTEND_URL,
-    credentials:true
-  }
-))
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || origin.startsWith("http://localhost:") || origin === process.env.FRONTEND_URL) {
+            callback(null, true);
+        } else {
+            callback(null, origin);
+        }
+    },
+    credentials: true
+}))
 app.use(cookieParser())
 app.use("/auth",proxy(process.env.AUTH_SERVICE))
 app.use("/api/auth",proxy(process.env.AUTH_SERVICE))
 app.use("/chat",protect,proxyWithHeader(process.env.CHAT_SERVICE))
+app.use("/api/chat",protect,proxyWithHeader(process.env.CHAT_SERVICE))
 app.use("/agent",protect,proxyWithHeader(process.env.AGENT_SERVICE))
+app.use("/api/agent",protect,proxyWithHeader(process.env.AGENT_SERVICE))
 app.get("/api/me",protect,getCurrentUser)
 
 app.get("/",(req,res)=>{
