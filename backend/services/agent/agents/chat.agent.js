@@ -85,7 +85,7 @@ Answer the user using only the above search results.
         console.log(error)
          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to generate chat"
+            aiResponse: error?.response?.data?.message || error?.message || "failed to generate chat"
         }
         
     

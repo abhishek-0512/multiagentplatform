@@ -42,7 +42,8 @@ ${state.prompt}
         `
 
         const res=await llm.invoke(prompt)
-        const data=JSON.parse(res.content)
+        const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
+        const data=JSON.parse(cleanContent)
        await deductCredits(state.userId,"pdf")
         
         const pdfBuffer=await generatePdf(data)
@@ -67,7 +68,7 @@ _Link expires in 10 minutes._`
        console.log(error)
          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to generate pdf"
+            aiResponse: error?.response?.data?.message || error?.message || "failed to generate pdf"
         }
     }
 }

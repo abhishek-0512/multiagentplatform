@@ -7,10 +7,23 @@
     },
     name:String,
     email:String,
-    avatar:String
+    avatar:String,
+    plan:{
+      type:String,
+      default:"free"
+    },
+    credits:{
+      type:Number,
+      default:50
+    },
+    totalCredits:{
+      type:Number,
+      default:50
+    },
+    planExpiresAt:Date
 
   },{
-    timestamp:true
+    timestamps:true
   }
  )
  const User=mongoose.model("User",userSchema)

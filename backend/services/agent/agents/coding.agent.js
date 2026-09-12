@@ -91,7 +91,8 @@ ${state.prompt}
         ` 
         const res=await llm.invoke(prompt)
         console.log(res)
-        const data=JSON.parse(res.content)
+        const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
+        const data=JSON.parse(cleanContent)
         await deductCredits(state.userId,"coding")
         
         return {
@@ -148,7 +149,7 @@ ${state.prompt}
    console.log(error)
          return {
             ...state,
-            aiResponse:error?.data?.message || "failed to generate code",
+            aiResponse: error?.response?.data?.message || error?.message || "failed to generate code",
             artifacts:[]
         }
 }
