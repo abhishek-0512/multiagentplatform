@@ -1,12 +1,12 @@
 import { getModel } from "../config/llmModels.js"
-import { generatePdf } from "../utils/generatePdf.js"
-import { getFromS3 } from "../utils/getFromS3.js"
-import { uploadToS3 } from "../utils/uploadToS3.js"
-import { deductCredits } from "../utils/deductCredits.js"
-import { checkAgentLimit } from "../config/agentLimit.js"
+// import { generatePdf } from "../utils/generatePdf.js"
+// import { getFromS3 } from "../utils/getFromS3.js"
+// import { uploadToS3 } from "../utils/uploadToS3.js"
+// import { deductCredits } from "../utils/deductCredits.js"
+// import { checkAgentLimit } from "../config/agentLimit.js"
 export const pdfAgent=async (state) => {
     try {
-        const rate=await checkAgentLimit(state.userId,"pdf")
+        // const rate=await checkAgentLimit(state.userId,"pdf")
         
         
         const llm=await getModel("pdf")
@@ -44,24 +44,18 @@ ${state.prompt}
         const res=await llm.invoke(prompt)
         const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
         const data=JSON.parse(cleanContent)
-       await deductCredits(state.userId,"pdf")
+        // await deductCredits(state.userId,"pdf")
         
-        const pdfBuffer=await generatePdf(data)
-
-        const filename=`pdf-${Date.now()}.pdf`
-        await uploadToS3(filename,pdfBuffer,"application/pdf")
-
-        const downloadUrl=await getFromS3(filename,24*60)
+        const downloadUrl="#"
 
         return {
           ...state,
-          aiResponse:`# PDF Generated
+          aiResponse:`# PDF Outline Generated
 
 **${data.title}**
 
-📥 [Download PDF](${downloadUrl})
-
-_Link expires in 10 minutes._`
+${data.subtitle || ""}
+`
         }
 
     } catch (error) {

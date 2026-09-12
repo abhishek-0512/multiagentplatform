@@ -1,10 +1,10 @@
-import { checkAgentLimit } from "../config/agentLimit.js"
+// import { checkAgentLimit } from "../config/agentLimit.js"
 import { getModel } from "../config/llmModels.js"
-import { deductCredits } from "../utils/deductCredits.js"
+// import { deductCredits } from "../utils/deductCredits.js"
 
 export const codingAgent=async (state) => {
 try {
-   await checkAgentLimit(state.userId,"coding")
+   // await checkAgentLimit(state.userId,"coding")
    const intentLlm=await getModel("intent")
    const llm=await getModel("coding")
    const intentRes=await intentLlm.invoke(`
@@ -93,7 +93,7 @@ ${state.prompt}
         console.log(res)
         const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
         const data=JSON.parse(cleanContent)
-        await deductCredits(state.userId,"coding")
+        // await deductCredits(state.userId,"coding")
         
         return {
             ...state,
@@ -138,7 +138,7 @@ ${state.prompt}
         `)
 
    const data=res.content   
-   await deductCredits(state.userId,"coding")
+   // await deductCredits(state.userId,"coding")
    
    return {
     ...state,
