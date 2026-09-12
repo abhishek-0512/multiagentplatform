@@ -1,9 +1,9 @@
-import React from 'react'
-import { Coins, LogOut, Menu, MessageSquare, PanelLeftIcon, PanelRight, PenBoxIcon, PenSquare, Plus, User, X } from "lucide-react"
+import { Coins, LogOut, Menu, MessageSquare, PanelLeftIcon, PanelRight, PenSquare, Plus, User, X } from "lucide-react"
 import { useState } from 'react'
-import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUserdata } from '../redux/userSlice'
+import { setSelectedConversation, addConversation } from '../redux/conversationSlice'
+import { createConversation } from '../features/createConversation'
 
 function SideBar() {
     const [collapsed, setCollapsed] = useState(false)
@@ -11,12 +11,16 @@ function SideBar() {
     const [imageError, setImageError] = useState(false)
     const conversations = useSelector(state => state.conversation?.conversations) || []
     const selectedConversation = useSelector(state => state.conversation?.selectedConversation) || null
-    const setSelectedConversation = (val) => ({ type: "SET_SELECTED_CONVERSATION", payload: val })
     const { userData } = useSelector(state => state.user)
-    const [showBilling,setShowBilling]=useState(false)
-    const [mobileOpen,setMobileOpen]=useState(false)
+    const [showBilling, setShowBilling] = useState(false)
+    const [mobileOpen, setMobileOpen] = useState(false)
 
     const handleCreateConversation = async () => {
+        const newConv = await createConversation()
+        if (newConv && newConv._id) {
+            dispatch(addConversation(newConv))
+            dispatch(setSelectedConversation(newConv))
+        }
     }
 
 
@@ -32,7 +36,7 @@ function SideBar() {
 
                 <button
                     className='flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer '
-                    onClick={()=>dispatch(setSelectedConversation(null))}
+                    onClick={handleCreateConversation}
                 >
                     <Plus size={17} />
                 </button>
@@ -42,6 +46,7 @@ function SideBar() {
                         const isActive = selectedConversation?._id == conv?._id
                         return (
                             <div
+                                key={conv?._id || i}
                                 onClick={() => dispatch(setSelectedConversation(conv))}
                                 className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
                 ${isActive ? "bg-indigo-500/10 border-indigo-500/[0.18]"
@@ -121,14 +126,14 @@ function SideBar() {
                     </span>
                     <span className='text-[10px] font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full tracking-wide'>{userData?.plan || "free"}</span>
                     <button className='flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer'
-                        onClick={()=>dispatch(setSelectedConversation(null))}>
+                        onClick={handleCreateConversation}>
                         <PenSquare size={14} />
                     </button>
                 </div>
 
                 <div className='px-4 pt-4 pb-1'>
                     <button className='w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-linear-to-br from-indigo-500 to-violet-700 rounded-xl py-[10px] border-none cursor-pointer hover:opacity-90 transition-opacity duration-150'
-                        onClick={()=>dispatch(setSelectedConversation(null))}
+                        onClick={handleCreateConversation}
                     >
                         <Plus size={15} />
                         New Chat
@@ -153,6 +158,7 @@ function SideBar() {
                         const isActive = selectedConversation?._id == conv?._id
                         return (
                             <div
+                                key={conv?._id || i}
                                 onClick={() => dispatch(setSelectedConversation(conv))}
                                 className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
                 ${isActive ? "bg-indigo-500/10 border-indigo-500/[0.18]"
@@ -217,8 +223,24 @@ function SideBar() {
                         </button>}
                 </div>
             </div>
-
         </div>
+
+        {showBilling && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
+                <div className="w-[320px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-6 flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-base font-semibold text-slate-100">Billing & Credits</h3>
+                        <button onClick={() => setShowBilling(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer">
+                            <X size={16} />
+                        </button>
+                    </div>
+                    <div className="text-sm text-slate-300">
+                        <p>Credits: <span className="text-indigo-400 font-semibold">{userData?.credits ?? 0}</span></p>
+                        <p>Plan: <span className="text-indigo-400 font-semibold">{userData?.plan || "free"}</span></p>
+                    </div>
+                </div>
+            </div>
+        )}
 
         </>
     )
