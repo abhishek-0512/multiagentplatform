@@ -7,6 +7,27 @@ import logOut from '../features/logout'
 import { addConversation, setConversations, setSelectedConversation } from '../redux/conversationSlice'
 import { setUserdata } from '../redux/userSlice'
 
+function BillingDrawer({ open, onClose }) {
+    const { userData } = useSelector(state => state.user) || { userData: null }
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
+            <div className="w-[320px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-6 flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-base font-semibold text-slate-100">Billing & Credits</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-200 cursor-pointer">
+                        <X size={16} />
+                    </button>
+                </div>
+                <div className="text-sm text-slate-300 flex flex-col gap-2">
+                    <p>Plan: <span className="text-indigo-400 font-semibold">{userData?.plan || "free"}</span></p>
+                    <p>Credits: <span className="text-indigo-400 font-semibold">{userData?.credits ?? 0}</span></p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function SideBar() {
     const [collapsed, setCollapsed] = useState(false)
     const dispatch = useDispatch()
@@ -208,22 +229,10 @@ function SideBar() {
                 </div>
             </div>
 
-            {showBilling && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
-                    <div className="w-[320px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-6 flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-base font-semibold text-slate-100">Billing & Credits</h3>
-                            <button onClick={() => setShowBilling(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer">
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="text-sm text-slate-300">
-                            <p>Credits: <span className="text-indigo-400 font-semibold">{userData?.credits ?? 0}</span></p>
-                            <p>Plan: <span className="text-indigo-400 font-semibold">{userData?.plan || "free"}</span></p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <BillingDrawer
+                open={showBilling}
+                onClose={() => setShowBilling(false)}
+            />
         </>
     )
 }
