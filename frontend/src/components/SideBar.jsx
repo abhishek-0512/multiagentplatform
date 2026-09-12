@@ -238,3 +238,4 @@ function SideBar() {
 }
 
 export default SideBar
+// Sidebar features complete
