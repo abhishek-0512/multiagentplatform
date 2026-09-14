@@ -97,7 +97,7 @@ function ChatInput() {
       formData.append("file", selectedFile)
     }
 
-    dispatch(addMessage({ role: "user", content: trimmedValue }))
+    dispatch(addMessage({ role: "user", content: trimmedValue, createdAt: new Date().toISOString() }))
     setValue("")
     setSelectedFile(null)
     if (fileRef.current) {
@@ -108,7 +108,12 @@ function ChatInput() {
     dispatch(setIsLoading(false))
     if (data) {
       dispatch(setArtifacts(data.artifacts || []))
-      dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))
+      dispatch(addMessage({ 
+        role: "assistant", 
+        content: data?.answer, 
+        images: data?.images,
+        createdAt: data?.createdAt || new Date().toISOString()
+      }))
     }
     console.log(data)
   }

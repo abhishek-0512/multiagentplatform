@@ -5,10 +5,14 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
-function MessageBubble({ role, content = "", images = [] }) {
+function MessageBubble({ role, content = "", images = [], createdAt }) {
   const isUser = role === "user"
   const [lightBox, setLightBox] = useState(null)
   const [copiedCode, setCopiedCode] = useState("")
+
+  const formattedTime = createdAt
+    ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : ""
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -192,7 +196,11 @@ function MessageBubble({ role, content = "", images = [] }) {
           {content}
         </Markdown>
 
-
+        {formattedTime && (
+          <div className={`text-[10px] mt-1 select-none flex ${isUser ? "justify-end text-white/70" : "justify-start text-slate-500"}`}>
+            {formattedTime}
+          </div>
+        )}
 
       </div>
       {lightBox &&
