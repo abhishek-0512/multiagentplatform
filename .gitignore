@@ -29,3 +29,5 @@ build/
 .idea/
 
 backend/services/auth/serviceAccountKey.json
+.session_store.json
+**/.session_store.json
