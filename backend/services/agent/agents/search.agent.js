@@ -1,24 +1,23 @@
-// import { checkAgentLimit } from "../config/agentLimit.js"
-// import { searchTool } from "../config/tavily.js"
-// import { deductCredits } from "../utils/deductCredits.js"
+import { searchTool } from "../config/tavily.js"
+
 export const searchAgent = async (state) => {
     try {
-        // await checkAgentLimit(state.userId, "search")
-        const results = { results: [], images: [] }
-        // await deductCredits(state.userId, "search")
-        console.log(results)
+        const rawResults = await searchTool.invoke({ query: state.prompt })
+        const results = rawResults?.results || []
+        const images = rawResults?.images || []
+        
         return {
             ...state,
             searchResults: results,
-            images: results.images
+            images: images
         }
     } catch (error) {
-        console.log(error)
+        console.error("searchAgent error:", error)
         return {
             ...state,
             searchResults: [],
             images: [],
-            aiResponse: error?.response?.data?.message || error?.message || "failed to search"
+            aiResponse: error?.response?.data?.message || error?.message || "failed to perform web search"
         }
     }
 }
