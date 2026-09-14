@@ -36,6 +36,7 @@ function SideBar() {
     const { userData } = useSelector(state => state.user) || { userData: null }
     const [showBilling, setShowBilling] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
+    const userId = userData?._id || userData?.userId
 
     useEffect(() => {
         const getConv = async () => {
@@ -44,10 +45,10 @@ function SideBar() {
                 dispatch(setConversations(data))
             }
         }
-        if (userData?._id || userData?.userId) {
+        if (userId) {
             getConv()
         }
-    }, [dispatch, userData?._id, userData?.userId])
+    }, [dispatch, userId])
 
     const handleCreateConversation = async () => {
         const data = await createConversation()
