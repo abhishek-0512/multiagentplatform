@@ -44,10 +44,10 @@ function SideBar() {
                 dispatch(setConversations(data))
             }
         }
-        if (userData?._id) {
+        if (userData?._id || userData?.userId) {
             getConv()
         }
-    }, [dispatch, userData?._id])
+    }, [dispatch, userData?._id, userData?.userId])
 
     const handleCreateConversation = async () => {
         const data = await createConversation()
@@ -203,7 +203,7 @@ function SideBar() {
                                 </div>
                                 <div className='flex-1 min-w-0'>
                                     <p className='text-[13.5px] font-semibold text-slate-100 truncate'>{userData?.name || "user"}</p>
-                                    <p className='text-[11px] text-slate-600 mt-px'>{`${userData?.plan}` || "free plan"} </p>
+                                    <p className='text-[11px] text-slate-600 mt-px'>{userData?.plan || "free plan"}</p>
                                 </div>
                                 <div className='flex gap-1'>
                                     <button

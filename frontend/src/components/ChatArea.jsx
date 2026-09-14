@@ -11,13 +11,8 @@ function ChatArea() {
   const dispatch=useDispatch()
   useEffect(()=>{
     const getMesg=async () => {
-      if(selectedConversation){
-        if(selectedConversation.title=="New Chat") {
-          dispatch(setMessages([]))
-          dispatch(setArtifacts([]))
-          return;
-        }
-        const data=await getMessages(selectedConversation?._id)
+      if(selectedConversation?._id){
+        const data=await getMessages(selectedConversation._id)
         const safeData = Array.isArray(data) ? data : []
         dispatch(setMessages(safeData))
         const latestArtifactMessage=[...safeData].reverse().find(msg=>msg.artifacts && msg.artifacts.length>0)
@@ -29,7 +24,7 @@ function ChatArea() {
     }
 
     getMesg()
-  },[dispatch, selectedConversation])
+  },[dispatch, selectedConversation?._id])
   return (
     <div className='flex-1 flex flex-col min-w-0'>
       <Nav/>

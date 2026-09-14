@@ -68,39 +68,45 @@ function ChatInput() {
 
 
   const handleSendMessage = async () => {
+    const trimmedValue = value.trim()
+    if ((!trimmedValue && !selectedFile) || isLoading) return;
+
     dispatch(setIsLoading(true))
     let conversation = selectedConversation
     if (!conversation) {
       dispatch(setMessages([]))
       const conv = await createConversation()
-      dispatch(setSelectedConversation(conv))
-
-      dispatch(addConversation(conv))
-      conversation = conv
+      if (conv) {
+        dispatch(setSelectedConversation(conv))
+        dispatch(addConversation(conv))
+        conversation = conv
+      }
     }
 
-    if (conversation.title == "New Chat") {
-      await updateConversation({ id: conversation?._id, title: value.trim() })
-      dispatch(setConvTitle({ conversationId: conversation?._id, title: value.slice(0, 40) }))
+    if (conversation && conversation.title === "New Chat" && trimmedValue) {
+      await updateConversation({ id: conversation?._id, title: trimmedValue })
+      dispatch(setConvTitle({ conversationId: conversation?._id, title: trimmedValue.slice(0, 40) }))
     }
 
-
-    console.log(selectedFile)
     const formData = new FormData()
-    formData.append("prompt", value.trim())
-    formData.append("conversationId", conversation?._id)
+    formData.append("prompt", trimmedValue)
+    if (conversation?._id) {
+      formData.append("conversationId", conversation._id)
+    }
     formData.append("agent", selectedAgent.toLowerCase())
     if (selectedFile) {
       formData.append("file", selectedFile)
     }
 
-
-
-    dispatch(addMessage({ role: "user", content: value.trim() }))
+    dispatch(addMessage({ role: "user", content: trimmedValue }))
     setValue("")
+    setSelectedFile(null)
+    if (fileRef.current) {
+      fileRef.current.value = ""
+    }
+
     const data = await sendMessage(formData)
     dispatch(setIsLoading(false))
-    setSelectedFile(null)
     if (data) {
       dispatch(setArtifacts(data.artifacts || []))
       dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))
@@ -232,6 +238,12 @@ function ChatInput() {
         <textarea
           placeholder='Ask Anything...'
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
           value={value}
           className="w-full bg-transparent outline-none resize-none text-[14px] text-slate-200 placeholder:text-slate-600 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden disabled:opacity-50"
           rows={3}
@@ -256,9 +268,9 @@ function ChatInput() {
             </button>
           </div>
           <button
-            disabled={!value && isLoading}
+            disabled={(!value.trim() && !selectedFile) || isLoading}
             onClick={handleSendMessage}
-            className={`flex items-center justify-center w-8 h-8 rounded-lg border-none cursor-pointer transition-all duration-150 ${value.trim() ? "bg-linear-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white" : "bg-white/[0.05] text-slate-600 cursor-not-allowed"}`}>
+            className={`flex items-center justify-center w-8 h-8 rounded-lg border-none cursor-pointer transition-all duration-150 ${(value.trim() || selectedFile) && !isLoading ? "bg-linear-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white" : "bg-white/[0.05] text-slate-600 cursor-not-allowed"}`}>
           <Send size={15} />
         </button>
       </div>
