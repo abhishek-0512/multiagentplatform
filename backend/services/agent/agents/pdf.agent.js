@@ -42,20 +42,29 @@ ${state.prompt}
         `
 
         const res=await llm.invoke(prompt)
-        const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
-        const data=JSON.parse(cleanContent)
-        // await deductCredits(state.userId,"pdf")
-        
-        const downloadUrl="#"
+        const cleanContent = (res.content || "").replace(/```json\s*|```/g, "").trim()
+        let data = null
+        try {
+            const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+            data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanContent)
+        } catch (parseErr) {
+            console.error("JSON parse error in pdf agent:", parseErr)
+        }
+
+        if (data && data.title) {
+            const sectionsText = (data.sections || []).map(sec => 
+                `### ${sec.heading || ""}\n${(sec.points || []).map(p => `- ${p}`).join("\n")}`
+            ).join("\n\n")
+
+            return {
+                ...state,
+                aiResponse: `# PDF Outline: ${data.title}\n\n${data.subtitle ? `*${data.subtitle}*\n\n` : ""}${sectionsText}`
+            }
+        }
 
         return {
-          ...state,
-          aiResponse:`# PDF Outline Generated
-
-**${data.title}**
-
-${data.subtitle || ""}
-`
+            ...state,
+            aiResponse: cleanContent
         }
 
     } catch (error) {

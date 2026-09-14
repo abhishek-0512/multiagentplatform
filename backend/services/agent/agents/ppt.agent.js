@@ -44,18 +44,29 @@ Topic:
 ${state.prompt}`
 
 const res=await llm.invoke(prompt)
-const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
-const data=JSON.parse(cleanContent)
-// await deductCredits(state.userId,"ppt")
+const cleanContent = (res.content || "").replace(/```json\s*|```/g, "").trim()
+let data = null
+try {
+    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+    data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanContent)
+} catch (parseErr) {
+    console.error("JSON parse error in ppt agent:", parseErr)
+}
+
+if (data && data.title) {
+    const slidesText = (data.slides || []).map((slide, idx) => 
+        `### Slide ${idx + 1}: ${slide.title || ""}\n${(slide.points || []).map(p => `- ${p}`).join("\n")}`
+    ).join("\n\n")
+
+    return {
+        ...state,
+        aiResponse: `# Presentation Outline: ${data.title}\n\n${data.subtitle ? `*${data.subtitle}*\n\n` : ""}${slidesText}`
+    }
+}
 
 return {
     ...state,
-    aiResponse:`# ✅ Presentation Outline Generated
-
-**${data.title}**
-
-${data.subtitle || ""}
-`
+    aiResponse: cleanContent
 }
 
     } catch (error) {

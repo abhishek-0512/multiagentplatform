@@ -1,5 +1,4 @@
 import { getModel } from "../config/llmModels.js"
-import { agent } from "../controllers/agent.controller.js"
 
 export const router = async (state) => {
 
@@ -10,24 +9,21 @@ export const router = async (state) => {
     }
   }
 
-  if(state.file){
-if(state.file.mimetype==="application/pdf"){
-    return {
-      ...state,
-      agent:"pdfRag"
+  if (state.file) {
+    if (state.file.mimetype === "application/pdf") {
+      return {
+        ...state,
+        agent: "pdfRag"
+      }
+    }
+
+    if (state.file.mimetype.startsWith("image/")) {
+      return {
+        ...state,
+        agent: "imageAnalyzer"
+      }
     }
   }
-
-    if(state.file.mimetype.startsWith("image/")){
-    return {
-      ...state,
-      agent:"imageAnalyzer"
-    }
-  }
-  }
-
-  
-
 
   const llm = await getModel("router")
   const prompt = `You are an agent router.
@@ -89,14 +85,12 @@ User Query:
 `
 
   const response = await llm.invoke(prompt)
+  const cleaned = (response.content || "").replace(/[`*_\n\r]/g, "").trim().toLowerCase()
+  const validAgents = ["chat", "search", "coding", "pdf", "ppt", "vision"]
+  const matchedAgent = validAgents.find(a => cleaned.includes(a)) || "chat"
 
   return {
     ...state,
-    agent: response.content
-      .trim()
-      .toLowerCase()
+    agent: matchedAgent
   }
-
-
-
 }

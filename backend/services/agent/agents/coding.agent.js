@@ -91,19 +91,25 @@ ${state.prompt}
         ` 
         const res=await llm.invoke(prompt)
         console.log(res)
-        const cleanContent = res.content.replace(/```json\s*|```/g, "").trim()
-        const data=JSON.parse(cleanContent)
+        const cleanContent = (res.content || "").replace(/```json\s*|```/g, "").trim()
+        let data = { files: [] }
+        try {
+            const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+            data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanContent)
+        } catch (parseErr) {
+            console.error("JSON parse error in coding agent:", parseErr)
+        }
         // await deductCredits(state.userId,"coding")
         
         return {
             ...state,
-            aiResponse:"Code Generated Successfully.",
-            artifacts:[
+            aiResponse: data.files && data.files.length > 0 ? "Code Generated Successfully." : (cleanContent || "Code Generated Successfully."),
+            artifacts: [
                 {
-                    id:Date.now(),
-                    type:"Project",
-                    files:data.files || [],
-                    title:state.prompt
+                    id: Date.now(),
+                    type: "Project",
+                    files: data.files || [],
+                    title: state.prompt
                 }
             ]
         }
