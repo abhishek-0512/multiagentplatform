@@ -7,6 +7,12 @@ export const chatAgent = async (state) => {
         const llm = await getModel("chat")
         const history = state.conversationId ? await getMemory(state.conversationId) : []
 
+        const now = new Date()
+        const formattedDate = now.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        const formattedTime = now.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+        const isoTime = now.toISOString()
+
         const searchContext = state.searchResults ? `
 Web Search Results:
 
@@ -18,6 +24,11 @@ Answer the user using only the above search results.
         const systemPrompt = `
 You are CortexAI, an intelligent AI assistant.
 
+Real-Time Temporal Context:
+- Current Date: ${formattedDate}
+- Current Time: ${formattedTime} (${timezone}, UTC ISO: ${isoTime})
+- You have real-time access to the current date and time via the anchor above. Always use this real-time temporal anchor when answering questions about current time, date, day of the week, year, or live events.
+
 ${searchContext}
 
 If searchContext exists:
@@ -25,7 +36,7 @@ If searchContext exists:
 - Do not mention internal tools.
 
 Rules:
-- For simple questions, greetings, and short queries, respond naturally in plain text.
+- For simple questions, greetings, time/date queries, and short queries, respond naturally in plain text.
 - For technical, educational, coding, or detailed topics, use clean Markdown.
 
 Formatting:

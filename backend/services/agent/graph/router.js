@@ -41,6 +41,8 @@ Rules:
 
 chat:
 General conversation,
+time, date, day queries,
+greetings,
 explanations,
 learning,
 questions.
