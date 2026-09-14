@@ -23,13 +23,17 @@ app.use(cors({
 }))
 app.use(morgan("dev"))
 app.use(cookieParser())
-app.use("/api/auth",proxy(process.env.AUTH_SERVICE))
-app.use("/api/chat",protect,proxyWithHeader(process.env.CHAT_SERVICE))
-app.use("/api/agent",protect,proxyWithHeader(process.env.AGENT_SERVICE))
+const authServiceUrl = process.env.AUTH_SERVICE || "http://127.0.0.1:8001"
+const chatServiceUrl = process.env.CHAT_SERVICE || "http://127.0.0.1:8002"
+const agentServiceUrl = process.env.AGENT_SERVICE || "http://127.0.0.1:8003"
+
+app.use("/api/auth", proxy(authServiceUrl))
+app.use("/api/chat", protect, proxyWithHeader(chatServiceUrl))
+app.use("/api/agent", protect, proxyWithHeader(agentServiceUrl))
 if (process.env.BILLING_SERVICE) {
-    app.use("/api/billing",protect,proxyWithHeader(process.env.BILLING_SERVICE))
+    app.use("/api/billing", protect, proxyWithHeader(process.env.BILLING_SERVICE))
 }
-app.get("/api/me",protect,getCurrentUser)
+app.get("/api/me", protect, getCurrentUser)
 app.get("/",(req,res)=>{
     res.json({message:"hello from gateway v5"})
 })
