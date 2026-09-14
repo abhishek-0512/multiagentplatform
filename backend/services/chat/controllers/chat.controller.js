@@ -34,7 +34,7 @@ export const updateConversation=async (req,res) => {
     const {id,title}=req.body
     const conversation=await Conversation.findByIdAndUpdate(id,{
         title
-    })
+    }, { new: true })
 
     return res.status(200).json(conversation)
   } catch (error) {
@@ -60,10 +60,9 @@ export const saveMessage=async (req,res) => {
 
 export const getMessages=async (req,res) => {
     try {
-        
         const messages=await Message.find({
             conversationId:req.params.conversationId   
-        })
+        }).sort({ createdAt: 1 })
         return res.status(200).json(messages)
     } catch (error) {
         return res.status(500).json({message:`get messages error ${error}`})
