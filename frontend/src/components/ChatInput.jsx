@@ -1,12 +1,11 @@
 import { Code2, FileText, Globe, ImageIcon, MessageSquare, Mic, MicOff, Paperclip, Presentation, Send, X, Zap } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import sendMessage from '../features/sendMessage'
 import { useDispatch, useSelector } from 'react-redux'
 import { addMessage, setArtifacts, setIsLoading, setMessages } from '../redux/messageSlice'
-import { createConversation, updateConversation } from '../features/createConversation'
+import { createConversation } from '../features/createConversation'
 import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
-import { useRef } from 'react'
-
+import { updateConversation } from '../features/updateConversation'
 
 function ChatInput() {
   const [value, setValue] = useState("")
