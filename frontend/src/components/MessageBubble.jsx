@@ -1,13 +1,26 @@
 import { Check, Copy, ExternalLink, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-function MessageBubble({ role, content, images }) {
+
+function MessageBubble({ role, content = "", images = [] }) {
   const isUser = role === "user"
   const [lightBox, setLightBox] = useState(null)
   const [copiedCode, setCopiedCode] = useState("")
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setLightBox(null)
+      }
+    }
+    if (lightBox) {
+      window.addEventListener("keydown", handleKeyDown)
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [lightBox])
 
   const copyCode = async (code) => {
     await navigator.clipboard.writeText(code)

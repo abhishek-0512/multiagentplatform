@@ -15,11 +15,11 @@ function LoadingAnimation() {
 function MessageList() {
     const {selectedConversation}=useSelector(state=>state.conversation)
     const {messages,isLoading}=useSelector(state=>state.message)
-    const bottemRef=useRef(null)
+    const bottomRef=useRef(null)
    
    useEffect(()=>{
        requestAnimationFrame(()=>{
-        bottemRef?.current?.scrollIntoView({
+        bottomRef?.current?.scrollIntoView({
           behavior:"smooth",
           block:"end"
         })
@@ -59,7 +59,7 @@ function MessageList() {
         
       </div>
       }
-      <div ref={bottemRef}/>
+      <div ref={bottomRef}/>
     </div>
   )
 }
