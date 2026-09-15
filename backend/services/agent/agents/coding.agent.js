@@ -1,17 +1,16 @@
-// import { checkAgentLimit } from "../config/agentLimit.js"
 import { getModel } from "../config/llmModels.js"
-// import { deductCredits } from "../utils/deductCredits.js"
+import { getMemory } from "../config/memory.js"
 
-export const codingAgent=async (state) => {
-try {
-   // await checkAgentLimit(state.userId,"coding")
-   const intentLlm=await getModel("intent")
-   const llm=await getModel("coding")
-   const intentRes=await intentLlm.invoke(`
-    You are an intent classifier.
+export const codingAgent = async (state) => {
+    try {
+        const intentLlm = await getModel("intent")
+        const llm = await getModel("coding")
+        const history = state.conversationId ? await getMemory(state.conversationId) : []
 
-Return ONLY one of these values.
+        const intentRes = await intentLlm.invoke(`
+You are an intent classifier.
 
+Return ONLY one of these values:
 CODE_GENERATION
 CODE_REVIEW
 CODE_EXPLANATION
@@ -22,14 +21,22 @@ DOCUMENTATION
 
 User Request:
 ${state.prompt}
-    `)
-    const intent=intentRes.content
-    if(intent=="CODE_GENERATION"){
-        const prompt=`
-        You are CortexAI Coding Agent.
+`)
+        const rawIntent = (intentRes.content || "").replace(/[`*_\n\r]/g, "").trim().toUpperCase()
+        const isCodeGeneration = rawIntent.includes("CODE_GENERATION")
+
+        let conversationContext = ""
+        if (Array.isArray(history) && history.length > 0) {
+            const recent = history.slice(-4)
+            conversationContext = `\nRecent Conversation Context:\n` + recent.map(m => `${m.role}: ${m.content}`).join("\n") + "\n"
+        }
+
+        if (isCodeGeneration) {
+            const prompt = `
+You are CortexAI Coding Agent.
 
 Generate the requested project.
-
+${conversationContext}
 Default stack:
 - HTML
 - CSS
@@ -38,7 +45,6 @@ Default stack:
 Use React / Next.js / Vue ONLY if explicitly requested.
 
 Rules:
-
 - Responsive
 - Modern UI
 - CSS Variables
@@ -50,15 +56,12 @@ Rules:
 
 IMAGES
 =========================
-
 Always use real Unsplash images.
-
 Never use placeholders.
 
 Return ONLY valid JSON.
 
 Schema:
-
 {
   "files":[
     {
@@ -77,87 +80,86 @@ Schema:
 }
 
 Rules:
-
 - Output must start with {
 - Output must end with }
-- No markdown
+- No markdown outside JSON
 - No explanation
 - No extra text
-- No \`\`\`
-- Never mention intent
 
 User Request:
 ${state.prompt}
-        ` 
-        const res=await llm.invoke(prompt)
-        console.log(res)
-        const cleanContent = (res.content || "").replace(/```json\s*|```/g, "").trim()
-        let data = { files: [] }
-        try {
-            const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
-            data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanContent)
-        } catch (parseErr) {
-            console.error("JSON parse error in coding agent:", parseErr)
-        }
-        // await deductCredits(state.userId,"coding")
-        
-        return {
-            ...state,
-            aiResponse: data.files && data.files.length > 0 ? "Code Generated Successfully." : (cleanContent || "Code Generated Successfully."),
-            artifacts: [
-                {
-                    id: Date.now(),
-                    type: "Project",
-                    files: data.files || [],
-                    title: state.prompt
+`
+            const res = await llm.invoke(prompt)
+            const rawContent = res.content || ""
+            const cleanContent = rawContent.replace(/```json\s*|```/g, "").trim()
+            let files = []
+
+            try {
+                const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+                const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleanContent)
+                if (Array.isArray(parsed?.files)) {
+                    files = parsed.files
                 }
-            ]
+            } catch (parseErr) {
+                console.error("JSON parse error in coding agent, attempting markdown fallback:", parseErr.message)
+                
+                // Fallback: extract code blocks if JSON was formatted as markdown
+                const htmlMatch = rawContent.match(/```(?:html)?\s*([\s\S]*?)```/i)
+                const cssMatch = rawContent.match(/```(?:css)?\s*([\s\S]*?)```/i)
+                const jsMatch = rawContent.match(/```(?:js|javascript)?\s*([\s\S]*?)```/i)
+
+                if (htmlMatch) files.push({ name: "index.html", content: htmlMatch[1].trim() })
+                if (cssMatch && (!htmlMatch || cssMatch[1] !== htmlMatch[1])) files.push({ name: "style.css", content: cssMatch[1].trim() })
+                if (jsMatch && (!htmlMatch || jsMatch[1] !== htmlMatch[1]) && (!cssMatch || jsMatch[1] !== cssMatch[1])) {
+                    files.push({ name: "script.js", content: jsMatch[1].trim() })
+                }
+            }
+
+            return {
+                ...state,
+                aiResponse: files.length > 0 ? "Code Generated Successfully." : (cleanContent || "Code Generated Successfully."),
+                artifacts: [
+                    {
+                        id: Date.now(),
+                        type: "Project",
+                        files: files,
+                        title: state.prompt
+                    }
+                ]
+            }
         }
-    }
 
-    const res=await llm.invoke(`
-        The user's request is:
+        const res = await llm.invoke(`
+The user's request is:
 
-${intent}
-
+${rawIntent || "CODE_EXPLANATION"}
+${conversationContext}
 Return Markdown only.
-
 Never generate project files.
 
 Use headings like:
-
 # Overview
-
 ## Explanation
-
 ## Problems
-
 ## Improvements
-
 ## Best Practices
-
 ## Optimized Code (if needed)
 
 User Request:
-
 ${state.prompt}
-        `)
+`)
 
-   const data=res.content   
-   // await deductCredits(state.userId,"coding")
-   
-   return {
-    ...state,
-    aiResponse:data,
-    artifacts:[]
-   }  
-} catch (error) {
-   console.log(error)
-         return {
+        return {
+            ...state,
+            aiResponse: res.content || "",
+            artifacts: []
+        }
+    } catch (error) {
+        console.error("codingAgent error:", error)
+        return {
             ...state,
             aiResponse: error?.response?.data?.message || error?.message || "failed to generate code",
-            artifacts:[]
+            artifacts: []
         }
-}
-  
+    }
 }
