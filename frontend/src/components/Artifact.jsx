@@ -3,12 +3,31 @@ import { useSelector } from 'react-redux'
 import { Code2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { AnimatePresence, motion } from "motion/react"
 
+const detectLanguage = (fileName = "") => {
+  const name = fileName.toLowerCase()
+  if (name.endsWith(".html")) return "html"
+  if (name.endsWith(".css")) return "css"
+  if (name.endsWith(".js")) return "javascript"
+  if (name.endsWith(".jsx")) return "javascript"
+  if (name.endsWith(".ts")) return "typescript"
+  if (name.endsWith(".tsx")) return "typescript"
+  if (name.endsWith(".json")) return "json"
+  if (name.endsWith(".py")) return "python"
+  if (name.endsWith(".java")) return "java"
+  if (name.endsWith(".cpp")) return "cpp"
+  if (name.endsWith(".c")) return "c"
+  return "javascript"
+}
+
 function PanelContent({
   collapsed,
   setCollapsed,
   currentArtifact,
-  onClose,
-  children
+  files,
+  file,
+  activeFile,
+  setActiveFile,
+  onClose
 }) {
   if (collapsed) {
     return (
@@ -54,9 +73,29 @@ function PanelContent({
         </div>
       </div>
 
+      {/* File Tabs */}
+      {files.length > 0 && (
+        <div className='flex h-auto border-b border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0'>
+          {files.map((f, index) => (
+            <button
+              key={f.name || index}
+              onClick={() => setActiveFile(index)}
+              className={`px-4 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors duration-150 border-r border-white/[0.05] relative cursor-pointer bg-transparent ${
+                activeFile === index ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {f?.name}
+              {activeFile === index && (
+                <div className='absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500 rounded-t-full' />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Content Body */}
-      <div className='flex-1 overflow-hidden relative'>
-        {children}
+      <div className='flex-1 overflow-hidden relative p-4 font-mono text-xs text-slate-300 overflow-y-auto whitespace-pre-wrap'>
+        {file?.content || "No files in artifact"}
       </div>
     </div>
   )
@@ -65,16 +104,23 @@ function PanelContent({
 function Artifact() {
   const [collapsed, setCollapsed] = useState(false)
   const { artifacts } = useSelector(state => state.message)
+  const [activeFile, setActiveFile] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   if (!artifacts || artifacts.length === 0) return null
 
   const currentArtifact = artifacts[0]
+  const files = currentArtifact?.files || []
+  const file = files[activeFile] || files[0]
 
   const panelProps = {
     collapsed,
     setCollapsed,
-    currentArtifact
+    currentArtifact,
+    files,
+    file,
+    activeFile,
+    setActiveFile
   }
 
   return (
@@ -108,9 +154,7 @@ function Artifact() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="lg:hidden fixed inset-y-0 right-0 z-50 w-[88vw] max-w-[420px] border-l border-white/[0.06] overflow-hidden"
             >
-              <PanelContent {...panelProps} onClose={() => setMobileOpen(false)}>
-                <div className="p-4 text-slate-400 text-sm">Artifact content</div>
-              </PanelContent>
+              <PanelContent {...panelProps} onClose={() => setMobileOpen(false)} />
             </motion.div>
           </>
         )}
@@ -126,9 +170,7 @@ function Artifact() {
         }}
         className='hidden lg:flex h-full border-l border-white/[0.06] flex-col overflow-hidden shrink-0'
       >
-        <PanelContent {...panelProps}>
-          <div className="p-4 text-slate-400 text-sm">Artifact content</div>
-        </PanelContent>
+        <PanelContent {...panelProps} />
       </motion.div>
     </>
   )
