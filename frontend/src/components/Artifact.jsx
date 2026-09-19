@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Code2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import { Code2, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { AnimatePresence, motion } from "motion/react"
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -29,6 +29,10 @@ function PanelContent({
   file,
   activeFile,
   setActiveFile,
+  tab,
+  setTab,
+  canPreview,
+  previewDoc,
   onClose
 }) {
   if (collapsed) {
@@ -73,10 +77,29 @@ function PanelContent({
             {currentArtifact?.title || "Artifact"}
           </div>
         </div>
+
+        {canPreview && (
+          <div className='flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] p-1 rounded-lg'>
+            <button
+              onClick={() => setTab("code")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150 cursor-pointer border-none
+              ${tab === "code" ? "bg-indigo-500 text-white" : "bg-transparent text-slate-500 hover:text-slate-200"}`}
+            >
+              <Code2 size={11} /> Code
+            </button>
+            <button
+              onClick={() => setTab("preview")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150 cursor-pointer border-none
+              ${tab === "preview" ? "bg-indigo-500 text-white" : "bg-transparent text-slate-500 hover:text-slate-200"}`}
+            >
+              <Eye size={11} /> Preview
+            </button>
+          </div>
+        )}
       </div>
 
       {/* File Tabs */}
-      {files.length > 0 && (
+      {tab === "code" && files.length > 0 && (
         <div className='flex h-auto border-b border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0'>
           {files.map((f, index) => (
             <button
@@ -97,29 +120,50 @@ function PanelContent({
 
       {/* Content Body */}
       <div className='flex-1 overflow-hidden relative'>
-        <div className='w-full h-full overflow-y-auto'>
-          {file ? (
-            <SyntaxHighlighter
-              language={detectLanguage(file?.name)}
-              style={oneDark}
-              showLineNumbers
-              wrapLongLines
-              customStyle={{
-                margin: 0,
-                padding: "16px",
-                background: "#0d0f14",
-                fontSize: "13px",
-                minHeight: "100%",
-              }}
-            >
-              {file?.content || ""}
-            </SyntaxHighlighter>
-          ) : (
-            <div className='flex items-center justify-center h-full text-slate-500 text-sm'>
-              No files in artifact
-            </div>
-          )}
-        </div>
+        {tab === "preview" && canPreview ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className='w-full h-full'
+          >
+            <iframe
+              title='preview'
+              srcDoc={previewDoc}
+              sandbox='allow-scripts'
+              className='w-full h-full bg-white border-none'
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className='w-full h-full overflow-y-auto'
+          >
+            {file ? (
+              <SyntaxHighlighter
+                language={detectLanguage(file?.name)}
+                style={oneDark}
+                showLineNumbers
+                wrapLongLines
+                customStyle={{
+                  margin: 0,
+                  padding: "16px",
+                  background: "#0d0f14",
+                  fontSize: "13px",
+                  minHeight: "100%",
+                }}
+              >
+                {file?.content || ""}
+              </SyntaxHighlighter>
+            ) : (
+              <div className='flex items-center justify-center h-full text-slate-500 text-sm'>
+                No files in artifact
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   )
@@ -128,6 +172,7 @@ function PanelContent({
 function Artifact() {
   const [collapsed, setCollapsed] = useState(false)
   const { artifacts } = useSelector(state => state.message)
+  const [tab, setTab] = useState("code")
   const [activeFile, setActiveFile] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -136,6 +181,28 @@ function Artifact() {
   const currentArtifact = artifacts[0]
   const files = currentArtifact?.files || []
   const file = files[activeFile] || files[0]
+  const htmlFile = files.find(f => f.name === "index.html" || f.name?.endsWith(".html"))
+  const cssFile = files.find(f => f.name === "style.css" || f.name?.endsWith(".css"))
+  const jsFile = files.find(f => f.name === "script.js" || f.name?.endsWith(".js"))
+
+  const canPreview = Boolean(htmlFile)
+
+  const previewDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+     ${cssFile?.content || ""}
+    </style>
+</head>
+<body>
+ ${htmlFile?.content || ""} 
+<script>
+    ${jsFile?.content || ""}
+</script>    
+</body>
+</html>`
 
   const panelProps = {
     collapsed,
@@ -144,7 +211,11 @@ function Artifact() {
     files,
     file,
     activeFile,
-    setActiveFile
+    setActiveFile,
+    tab,
+    setTab,
+    canPreview,
+    previewDoc
   }
 
   return (
