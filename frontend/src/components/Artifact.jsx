@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Code2, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { AnimatePresence, motion } from "motion/react"
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 const detectLanguage = (fileName = "") => {
   const name = fileName.toLowerCase()
@@ -94,8 +96,30 @@ function PanelContent({
       )}
 
       {/* Content Body */}
-      <div className='flex-1 overflow-hidden relative p-4 font-mono text-xs text-slate-300 overflow-y-auto whitespace-pre-wrap'>
-        {file?.content || "No files in artifact"}
+      <div className='flex-1 overflow-hidden relative'>
+        <div className='w-full h-full overflow-y-auto'>
+          {file ? (
+            <SyntaxHighlighter
+              language={detectLanguage(file?.name)}
+              style={oneDark}
+              showLineNumbers
+              wrapLongLines
+              customStyle={{
+                margin: 0,
+                padding: "16px",
+                background: "#0d0f14",
+                fontSize: "13px",
+                minHeight: "100%",
+              }}
+            >
+              {file?.content || ""}
+            </SyntaxHighlighter>
+          ) : (
+            <div className='flex items-center justify-center h-full text-slate-500 text-sm'>
+              No files in artifact
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
