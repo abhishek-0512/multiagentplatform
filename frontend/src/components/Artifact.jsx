@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { Code2, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import { Check, Code2, Copy, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { AnimatePresence, motion } from "motion/react"
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -33,6 +33,8 @@ function PanelContent({
   setTab,
   canPreview,
   previewDoc,
+  handleCopy,
+  copied,
   onClose
 }) {
   if (collapsed) {
@@ -73,9 +75,17 @@ function PanelContent({
           <div className='flex items-center justify-center w-6 h-6 rounded-md bg-indigo-500/10 border border-indigo-500/20 shrink-0'>
             <Code2 className="text-indigo-400" size={12} />
           </div>
-          <div className='text-[13px] font-medium text-slate-200 truncate'>
-            {currentArtifact?.title || "Artifact"}
-          </div>
+          <div className='text-[13px] font-medium text-slate-200 truncate'>{currentArtifact?.title || "Artifact"}</div>
+        </div>
+
+        <div className='flex items-center gap-1 shrink-0'>
+          <button
+            onClick={handleCopy}
+            title="Copy code"
+            className='flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] rounded-lg transition-colors duration-150 bg-transparent border-none cursor-pointer'
+          >
+            {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
+          </button>
         </div>
 
         {canPreview && (
@@ -174,6 +184,7 @@ function Artifact() {
   const { artifacts } = useSelector(state => state.message)
   const [tab, setTab] = useState("code")
   const [activeFile, setActiveFile] = useState(0)
+  const [copied, setCopied] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   if (!artifacts || artifacts.length === 0) return null
@@ -204,6 +215,14 @@ function Artifact() {
 </body>
 </html>`
 
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(file?.content || "")
+    setCopied(true)
+    setTimeout(() => {
+      setCopied(false)
+    }, 2000)
+  }
+
   const panelProps = {
     collapsed,
     setCollapsed,
@@ -215,7 +234,9 @@ function Artifact() {
     tab,
     setTab,
     canPreview,
-    previewDoc
+    previewDoc,
+    handleCopy,
+    copied
   }
 
   return (
