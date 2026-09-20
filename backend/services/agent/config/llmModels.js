@@ -72,6 +72,10 @@ class ResilientLLM {
             } catch (err) {
                 lastError = err
                 console.warn(`[ResilientLLM] Tier ${i + 1} (${model.model || "LLM"}) error: ${err.message?.slice(0, 100)}...`)
+                // Brief pause before trying next fallback if rate limited
+                if (err.status === 429 || err.message?.includes("429") || err.message?.includes("Rate limit")) {
+                    await new Promise(r => setTimeout(r, 200))
+                }
             }
         }
 
