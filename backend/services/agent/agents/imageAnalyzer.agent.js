@@ -5,8 +5,8 @@ import fs from "fs/promises"
 import { deductCredits } from "../utils/deductCredits.js"
 import { checkAgentLimit } from "../config/agentLimit.js"
 export const imageAnalyzer =async (state) => {
-     await checkAgentLimit(state.userId,"image")
     try {
+        await checkAgentLimit(state.userId,"image")
         const llm = await getModel("imageAnalyzer")
 
         const imageBuffer = await fs.readFile(state.file.path)
@@ -14,7 +14,7 @@ export const imageAnalyzer =async (state) => {
 
         const messages = [
             new SystemMessage(
-                `You are CortexAI image analyzer Agent.
+                `You are Nexora image analyzer Agent.
 
 Rules:
 
@@ -62,6 +62,8 @@ return {
 }
     }
     finally{
-      await fs.unlink(state.file.path)
+      if (state.file?.path) {
+        await fs.unlink(state.file.path).catch(() => {})
+      }
     }
 }
