@@ -168,7 +168,8 @@ function MessageBubble({ role, agent, content, images = [], artifacts = [], sour
                   href={src.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] text-slate-700 hover:text-slate-900 no-underline transition max-w-[240px] truncate group shadow-2xs"
+                  aria-label={`Source: ${src.title || src.url}`}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 active:scale-[0.98] border border-slate-200 text-[11px] text-slate-700 hover:text-slate-900 no-underline transition max-w-[240px] truncate group shadow-2xs"
                   title={src.title || src.url}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
