@@ -13,27 +13,27 @@ const port =process.env.PORT
 const app=express()
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || origin.startsWith("http://localhost:") || origin === process.env.FRONTEND_URL) {
-            callback(null, true);
+        if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === process.env.FRONTEND_URL) {
+            callback(null, true)
         } else {
-            callback(null, origin);
+            callback(null, true)
         }
     },
-    credentials: true
+    credentials:true
 }))
 app.use(morgan("dev"))
 app.use(cookieParser())
-const authServiceUrl = process.env.AUTH_SERVICE || "http://127.0.0.1:8001"
-const chatServiceUrl = process.env.CHAT_SERVICE || "http://127.0.0.1:8002"
-const agentServiceUrl = process.env.AGENT_SERVICE || "http://127.0.0.1:8003"
-
-app.use("/api/auth", proxy(authServiceUrl))
-app.use("/api/chat", protect, proxyWithHeader(chatServiceUrl))
-app.use("/api/agent", protect, proxyWithHeader(agentServiceUrl))
-if (process.env.BILLING_SERVICE) {
-    app.use("/api/billing", protect, proxyWithHeader(process.env.BILLING_SERVICE))
-}
-app.get("/api/me", protect, getCurrentUser)
+app.use("/api/auth",proxy(process.env.AUTH_SERVICE))
+app.use("/api/agent/download", proxy(process.env.AGENT_SERVICE, {
+    proxyReqPathResolver: (req) => `/download${req.url}`
+}))
+app.use("/api/agent/file", proxy(process.env.AGENT_SERVICE, {
+    proxyReqPathResolver: (req) => `/file${req.url}`
+}))
+app.use("/api/chat",protect,proxyWithHeader(process.env.CHAT_SERVICE))
+app.use("/api/agent",protect,proxyWithHeader(process.env.AGENT_SERVICE))
+app.use("/api/billing",protect,proxyWithHeader(process.env.BILLING_SERVICE))
+app.get("/api/me",protect,getCurrentUser)
 app.get("/",(req,res)=>{
     res.json({message:"hello from gateway v5"})
 })

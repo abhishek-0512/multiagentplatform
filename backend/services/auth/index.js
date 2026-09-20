@@ -1,22 +1,21 @@
-import "dotenv/config";
+import express from "express"
+import dotenv from "dotenv"
+import cookieParser from "cookie-parser"
+import connectDb from "./config/db.js"
+import router from "./routes/auth.route.js"
+dotenv.config()
 
-import express from "express";
-import connectDb from "./config/db.js";
-import router from "./routes/auth.route.js";
+const port =process.env.PORT
 
-const port = process.env.PORT;
+const app=express()
+app.use(express.json())
+app.use(cookieParser())
+app.use("/",router)
+app.get("/",(req,res)=>{
+    res.json({message:"hello from auth"})
+})
 
-const app = express();
-
-app.use(express.json());
-
-app.use("/", router);
-
-app.get("/", (req, res) => {
-    res.json({ message: "hello from auth" });
-});
-
-app.listen(port, () => {
-    console.log(`auth started at ${port}`);
-    connectDb();
-});
+app.listen(port,()=>{
+    console.log(`auth started at ${port}`)
+    connectDb()
+})

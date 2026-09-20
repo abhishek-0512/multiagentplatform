@@ -1,10 +1,11 @@
 import express from "express"
-import { agent } from "../controllers/agent.controller.js"
-import multer from "multer"
+import { agent, downloadFile, viewFile } from "../controllers/agent.controller.js"
+import multer from "../config/multer.js"
 
-const upload = multer({ storage: multer.memoryStorage() })
 const router = express.Router()
 
-router.post("/chat", upload.single("file"), agent)
+router.post("/chat", multer.single("file"), agent)
+router.get("/download/:filename", downloadFile)
+router.get("/file/:filename", viewFile)
 
 export default router
