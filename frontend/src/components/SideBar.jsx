@@ -1,242 +1,243 @@
-import { Coins, LogOut, Menu, MessageSquare, PanelLeftIcon, PanelRight, PenSquare, Plus, User, X } from "lucide-react"
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { getConversations } from '../features/getConversations'
-import { createConversation } from '../features/createConversation'
-import logOut from '../features/logout'
-import { addConversation, setConversations, setSelectedConversation } from '../redux/conversationSlice'
-import { setUserdata } from '../redux/userSlice'
+import { Check, Code2, Copy, Eye, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
+import { AnimatePresence, easeInOut, motion } from "motion/react"
+import Editor from '@monaco-editor/react';
+function Artifact() {
+  const [collapsed, setCollapsed] = useState(false)
+  const { artifacts } = useSelector(state => state.message)
+  const [tab, setTab] = useState("code")
+  const [activeFile, setActiveFile] = useState(0)
+  const [copied, setCopied] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  if (artifacts.length == 0) return;
 
-function BillingDrawer({ open, onClose }) {
-    const { userData } = useSelector(state => state.user) || { userData: null }
-    if (!open) return null;
+
+
+  const file = artifacts[0]?.files[activeFile]
+  const htmlFile = artifacts[0]?.files?.find(f => f.name == "index.html")
+  const cssFile = artifacts[0]?.files?.find(f => f.name == "style.css")
+  const jsFile = artifacts[0]?.files?.find(f => f.name == "script.js")
+
+  const canPreview = Boolean(htmlFile)
+
+  const previewDoc = `
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+     ${cssFile?.content || ""}
+    </style>
+</head>
+<body>
+ ${htmlFile?.content || ""} 
+<script>
+    ${jsFile?.content || ""}
+</script>    
+</body>
+</html>`
+
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(file?.content || "")
+    setCopied(true)
+    setTimeout(() => {
+      setCopied(false)
+    }, 2000)
+  }
+
+  const detectLanguage = (fileName = "") => {
+    const name = fileName.toLowerCase()
+
+    if (name.endsWith(".html"))
+      return "html";
+
+    if (name.endsWith(".css"))
+      return "css";
+
+    if (name.endsWith(".js"))
+      return "javascript";
+
+    if (name.endsWith(".jsx"))
+      return "javascript";
+
+    if (name.endsWith(".ts"))
+      return "typescript";
+
+    if (name.endsWith(".tsx"))
+      return "typescript";
+
+    if (name.endsWith(".json"))
+      return "json";
+
+    if (name.endsWith(".py"))
+      return "python";
+
+    if (name.endsWith(".java"))
+      return "java";
+
+    if (name.endsWith(".cpp"))
+      return "cpp";
+
+    if (name.endsWith(".c"))
+      return "c";
+
+    return "plaintext";
+
+  }
+
+  const PanelContent = ({onClose}) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
-            <div className="w-[320px] bg-[#13151c] border border-white/[0.08] rounded-2xl p-6 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-base font-semibold text-slate-100">Billing & Credits</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-200 cursor-pointer">
-                        <X size={16} />
-                    </button>
-                </div>
-                <div className="text-sm text-slate-300 flex flex-col gap-2">
-                    <p>Plan: <span className="text-indigo-400 font-semibold">{userData?.plan || "free"}</span></p>
-                    <p>Credits: <span className="text-indigo-400 font-semibold">{userData?.credits ?? 0}</span></p>
-                </div>
-            </div>
-        </div>
-    );
-}
+      <>
+        {!collapsed ? <div className='flex flex-col h-full bg-[#0d0f14]'>
 
-function SideBar() {
-    const [collapsed, setCollapsed] = useState(false)
-    const dispatch = useDispatch()
-    const [imageError, setImageError] = useState(false)
-    const { conversations, selectedConversation } = useSelector(state => state.conversation) || { conversations: [], selectedConversation: null }
-    const { userData } = useSelector(state => state.user) || { userData: null }
-    const [showBilling, setShowBilling] = useState(false)
-    const [mobileOpen, setMobileOpen] = useState(false)
-    const userId = userData?._id || userData?.userId
-
-    useEffect(() => {
-        const getConv = async () => {
-            const data = await getConversations()
-            if (Array.isArray(data)) {
-                dispatch(setConversations(data))
-            }
-        }
-        if (userId) {
-            getConv()
-        }
-    }, [dispatch, userId])
-
-    const handleCreateConversation = async () => {
-        const data = await createConversation()
-        if (data && data._id) {
-            dispatch(addConversation(data))
-            dispatch(setSelectedConversation(data))
-        }
-    }
-
-    if (collapsed) {
-        return (
-            <div className='hidden lg:flex flex-col items-center w-[56px] h-screen bg-[#0d0f14] border-r border-white/[0.06] py-4 gap-1 shrink-0'>
-                <button className='flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer mb-1'
-                    onClick={() => setCollapsed(false)}
-                >
-                    <PanelRight />
-                </button>
-
-                <button
-                    className='flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer '
-                    onClick={handleCreateConversation}
-                >
-                    <Plus size={17} />
-                </button>
-
-                <div className='flex-1 overflow-y-auto px-2.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-5'>
-                    {conversations?.map((conv, i) => {
-                        const isActive = selectedConversation?._id == conv?._id
-                        return (
-                            <div
-                                key={conv?._id || i}
-                                onClick={() => dispatch(setSelectedConversation(conv))}
-                                className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
-                ${isActive ? "bg-indigo-500/10 border-indigo-500/[0.18]"
-                                        : "bg-transparent border-transparent"}`}>
-                                <div className={`flex items-center justify-center shrink-0 w-[20px] h-[20px] rounded-lg transition-colors duration-150
-                ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-white/[0.05] text-slate-500"}`}>
-                                    <MessageSquare size={13} />
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-
-                <div className='relative shrink-0'>
-                    {(userData?.avatar && !imageError)
-                        ? <img
-                            className='w-9 h-9 rounded-[10px] object-cover border-2 border-indigo-500/25'
-                            src={userData?.avatar}
-                            alt={"image"}
-                            onError={() => setImageError(true)} />
-                        : <div className='w-9 h-9 rounded-[10px] bg-white/[0.06] flex items-center justify-center'>
-                            <User size={15} className="text-slate-400" />
-                        </div>
-                    }
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <>
-            <button className='lg:hidden fixed top-3.5 left-4 z-50 flex items-center justify-center w-8 h-8 rounded-lg bg-[#0d0f14] border border-white/[0.06] text-slate-400 hover:text-slate-200 transition-colors duration-150 cursor-pointer' onClick={() => setMobileOpen(true)}>
-                <Menu size={14} />
+          <div className='h-14 px-4 border-b border-white/[0.06] flex items-center gap-3 shrink-0'>
+            <button className='flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0' onClick={onClose ?? (() => setCollapsed(true))}>
+              {onClose?<X size={15}/>:<PanelRightClose size={16} />}
             </button>
-
-            {mobileOpen && <div onClick={() => setMobileOpen(false)} className='lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm' />}
-
-            <div className={`fixed lg:static inset-y-0 left-0 z-50
-                w-[270px] h-screen shrink-0
-                bg-[#0d0f14] border-r border-white/[0.06]
-                transition-transform duration-250
-                ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-            `}>
-                <div className='flex flex-col h-full'>
-                    <div className='flex items-center gap-2.5 px-4 py-4 border-b border-white/[0.06]'>
-                        <div className='hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer'
-                            onClick={() => setCollapsed(true)}
-                        >
-                            <PanelLeftIcon />
-                        </div>
-
-                        <button onClick={() => setMobileOpen(false)}
-                            className="lg:hidden flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer"
-                        >
-                            <X />
-                        </button>
-                        <span className='text-[16px] font-semibold text-slate-100 tracking-tight flex-1'>
-                            CortexAI
-                        </span>
-                        <span className='text-[10px] font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full tracking-wide'>{userData?.plan || "free"}</span>
-                        <button className='flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer'
-                            onClick={handleCreateConversation}>
-                            <PenSquare size={14} />
-                        </button>
-                    </div>
-
-                    <div className='px-4 pt-4 pb-1'>
-                        <button className='w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-linear-to-br from-indigo-500 to-violet-700 rounded-xl py-[10px] border-none cursor-pointer hover:opacity-90 transition-opacity duration-150'
-                            onClick={handleCreateConversation}
-                        >
-                            <Plus size={15} />
-                            New Chat
-                        </button>
-                    </div>
-
-                    {conversations?.length === 0
-                        ? <div className='px-5 pt-4 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-slate-600'>
-                            No Recent Conversations
-                        </div>
-                        : <div className='px-5 pt-4 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-slate-600'>
-                            Recents
-                        </div>
-                    }
-
-                    <div className='flex-1 overflow-y-auto px-2.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-                        {conversations?.map((conv, i) => {
-                            const isActive = selectedConversation?._id == conv?._id
-                            return (
-                                <div
-                                    key={conv?._id || i}
-                                    onClick={() => dispatch(setSelectedConversation(conv))}
-                                    className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
-                    ${isActive ? "bg-indigo-500/10 border-indigo-500/[0.18]"
-                                            : "bg-transparent border-transparent"}`}>
-                                    <div className={`flex items-center justify-center shrink-0 w-[28px] h-[28px] rounded-lg transition-colors duration-150
-                    ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-white/[0.05] text-slate-500"}`}>
-                                        <MessageSquare size={13} />
-                                    </div>
-                                    <span className={`text-[13px] font-medium truncate ${isActive ? "text-slate-100" : "text-slate-300"}`}>
-                                        {conv?.title || "New Chat"}
-                                    </span>
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    <div className='mx-2.5 h-px bg-white/[0.06]' />
-                    <div className='px-3.5 py-3.5'>
-                        {userData ? (
-                            <div className='flex items-center gap-2.5 cursor-pointer rounded-xl px-3 py-2.5 hover:bg-white/[0.05] transition-colors duration-150'>
-                                <div className='relative shrink-0'>
-                                    {(userData?.avatar && !imageError)
-                                        ? <img
-                                            className='w-9 h-9 rounded-[10px] object-cover border-2 border-indigo-500/25'
-                                            src={userData?.avatar}
-                                            alt={"image"}
-                                            onError={() => setImageError(true)} />
-                                        : <div className='w-9 h-9 rounded-[10px] bg-white/[0.06] flex items-center justify-center'>
-                                            <User size={15} className="text-slate-400" />
-                                        </div>
-                                    }
-                                </div>
-                                <div className='flex-1 min-w-0'>
-                                    <p className='text-[13.5px] font-semibold text-slate-100 truncate'>{userData?.name || "user"}</p>
-                                    <p className='text-[11px] text-slate-600 mt-px'>{userData?.plan || "free plan"}</p>
-                                </div>
-                                <div className='flex gap-1'>
-                                    <button
-                                        onClick={() => setShowBilling(true)}
-                                        className='flex items-center justify-center w-7 h-7 rounded-[7px] border-none bg-transparent text-yellow-600 cursor-pointer hover:bg-white/[0.08] hover:text-slate-400 transition-all duration-150'>
-                                        <Coins size={16} />
-                                    </button>
-                                    <button className='flex items-center justify-center w-7 h-7 rounded-[7px] border-none bg-transparent text-slate-600 cursor-pointer hover:bg-white/[0.08] hover:text-slate-400 transition-all duration-150'
-                                        onClick={() => {
-                                            logOut();
-                                            dispatch(setUserdata(null));
-                                        }}
-                                    >
-                                        <LogOut size={16} />
-                                    </button>
-                                </div>
-                            </div>)
-                            : <button className='w-full flex items-center justify-center gap-2 text-sm font-medium text-slate-200 bg-white/[0.05] border border-white/[0.08] rounded-xl py-[11px] cursor-pointer hover:bg-white/[0.08] transition-colors duration-150'>
-                                Login
-                            </button>
-                        }
-                    </div>
-                </div>
+            <div className='flex items-center gap-2 flex-1 min-w-0'>
+              <div className='flex items-center justify-center w-6 h-6 rounded-md bg-indigo-500/10 border border-indigo-500/20 shrink-0'>
+                <Code2 className="text-indigo-400" size={12} />
+              </div>
+              <div className='text-[13px] font-medium text-slate-200 truncate'>{artifacts[0]?.title}</div>
             </div>
 
-            <BillingDrawer
-                open={showBilling}
-                onClose={() => setShowBilling(false)}
-            />
-        </>
+            <div className='flex items-center gap-1 shrink-0'>
+              <button
+                onClick={handleCopy}
+                className='flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] rounded-lg transition-colors duration-150 bg-transparent border-none cursor-pointer'
+              >
+                {copied ? <Check size={15} /> : <Copy size={15} />}
+              </button>
+            </div>
+            {canPreview &&
+              <div className='flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] p-1 rounded-lg'>
+                <button
+                  onClick={() => setTab("code")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150
+                  ${tab === "code" ? "bg-indigo-500 text-white" : "text-slate-500 hover:text-slate-200"}`}
+                >
+                  <Code2 size={11} /> Code
+                </button>
+                <button
+                  onClick={() => setTab("preview")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors duration-150
+                  ${tab === "preview" ? "bg-indigo-500 text-white" : "text-slate-500 hover:text-slate-200"}`}
+                >
+                  <Eye size={11} /> Preview
+                </button>
+              </div>}
+
+          </div>
+          {tab === "code" && <div className='flex h-auto border-b border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0'>
+            {
+              artifacts[0]?.files?.map((f, index) => (
+                <button
+                  onClick={() => setActiveFile(index)}
+                  className={`px-4 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors duration-150 border-r border-white/[0.05] relative cursor-pointer bg-transparent   ${activeFile === index ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+                >
+                  {f?.name}
+                  {activeFile === index && <div className='absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500 rounded-t-full' />}
+
+                </button>
+              ))
+            }
+          </div>}
+
+
+          <div className='flex-1 overflow-hidden'>
+            {(tab == "preview" && canPreview) ? <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className='w-full h-full'
+            >
+              <iframe title='preview' srcDoc={previewDoc} sandbox='allow-scripts' className='w-full h-full bg-white' />
+            </motion.div>
+              :
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className='w-full h-full'
+              >
+                <Editor
+                  theme='vs-dark'
+                  language={detectLanguage(file?.name)}
+                  value={file?.content}
+                  options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13, wordWrap: "on", automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 16 }, lineNumbers: "on", renderLineHighlight: "none" }}
+
+                />
+
+              </motion.div>
+            }
+
+          </div>
+
+
+        </div> :
+          <div className='hidden lg:flex h-full border-l border-white/[0.06] bg-[#0d0f14] flex-col items-center py-4 gap-3 shrink-0'>
+            <button className='flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0' onClick={() => setCollapsed(false)}>
+              <PanelRightOpen size={16} />
+            </button>
+            <div className='flex items-center gap-2 flex-1 min-w-0'>
+              <div
+                className='text-[10px] font-medium text-slate-600 tracking-widest uppercase whitespace-nowrap'
+                style={{
+                  writingMode: "vertical-lr",
+                  transform: "rotate(180deg)"
+                }}
+              >{artifacts[0]?.title}</div>
+            </div>
+          </div>}
+      </>
     )
+  }
+
+
+
+
+
+  return (
+    <>
+
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed bottom-24 right-4 z-40 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[12px] font-medium shadow-lg shadow-indigo-500/20 border-none cursor-pointer transition-colors duration-150"
+
+      >
+        <Code2 size={13} />
+        View Code
+      </button>
+      <AnimatePresence>
+        {mobileOpen && <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setMobileOpen(false)} className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+
+          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ duration: 0.25, ease: "easeInOut" }} className="lg:hidden fixed inset-y-0 right-0 z-50 w-[88vw] max-w-[420px] border-l border-white/[0.06] overflow-hidden">
+            <PanelContent onClose={()=>setMobileOpen(false)}/>
+          </motion.div>
+
+        </>
+        }
+
+      </AnimatePresence>
+
+
+      <motion.div
+        initial={{ width: 400 }}
+        animate={{ width: collapsed ? 48 : 400 }}
+        transition={{
+          duration: 0.25,
+          ease: easeInOut
+        }}
+        className='hidden lg:flex h-full border-l border-white/[0.06] flex-col overflow-hidden shrink-0 '>
+
+        <PanelContent />
+      </motion.div>
+    </>
+  )
 }
 
-export default SideBar
-// Sidebar features complete
+export default Artifact

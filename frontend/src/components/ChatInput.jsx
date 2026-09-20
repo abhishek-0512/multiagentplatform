@@ -4,13 +4,12 @@ import sendMessage from '../features/sendMessage'
 import { useDispatch, useSelector } from 'react-redux'
 import { addMessage, setArtifacts, setIsLoading, setMessages } from '../redux/messageSlice'
 import { createConversation } from '../features/createConversation'
-import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
+import { addConversation, setConvTitle, setSelectedAgent, setSelectedConversation } from '../redux/conversationSlice'
 import { updateConversation } from '../features/updateConversation'
 
 function ChatInput() {
   const [value, setValue] = useState("")
-  const [selectedAgent, setSelectedAgent] = useState("Auto")
-  const { selectedConversation } = useSelector(state => state.conversation)
+  const { selectedConversation, selectedAgent } = useSelector(state => state.conversation)
   const { isLoading } = useSelector(state => state.message)
   const [selectedFile, setSelectedFile] = useState(null)
   const [listening, setListening] = useState(false)
@@ -59,13 +58,6 @@ function ChatInput() {
 
   }
 
-
-
-
-
-
-
-
   const handleSendMessage = async () => {
     const trimmedValue = value.trim()
     if ((!trimmedValue && !selectedFile) || isLoading) return;
@@ -87,12 +79,13 @@ function ChatInput() {
       dispatch(setConvTitle({ conversationId: conversation?._id, title: trimmedValue.slice(0, 40) }))
     }
 
+    const currentAgent = (selectedAgent || "Auto").toLowerCase()
     const formData = new FormData()
     formData.append("prompt", trimmedValue)
     if (conversation?._id) {
       formData.append("conversationId", conversation._id)
     }
-    formData.append("agent", selectedAgent.toLowerCase())
+    formData.append("agent", currentAgent)
     if (selectedFile) {
       formData.append("file", selectedFile)
     }
@@ -112,10 +105,10 @@ function ChatInput() {
         role: "assistant", 
         content: data?.answer, 
         images: data?.images,
+        artifacts: data?.artifacts,
         createdAt: data?.createdAt || new Date().toISOString()
       }))
     }
-    console.log(data)
   }
 
   const agents = [
@@ -174,7 +167,7 @@ function ChatInput() {
             return (
               <div
                 key={agent.id}
-                onClick={() => setSelectedAgent(agent.label)}
+                onClick={() => dispatch(setSelectedAgent(agent.label))}
                 className={`
             flex-shrink-0
             cursor-pointer
