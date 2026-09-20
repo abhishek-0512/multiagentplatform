@@ -1,4 +1,7 @@
-import { useEffect } from 'react'
+import { signInWithPopup } from 'firebase/auth'
+import React, { useEffect } from 'react'
+import { auth, googleProvider } from './utils/firebase'
+import api from './utils/axios'
 import Home from './pages/Home'
 import getCurrentUser from './features/getCurrentUser'
 import { useDispatch } from 'react-redux'
@@ -13,7 +16,7 @@ useEffect(()=>{
     dispatch(setUserdata(data))
   }
   getUser()
-},[dispatch])
+},[])
 
   return (
    <>

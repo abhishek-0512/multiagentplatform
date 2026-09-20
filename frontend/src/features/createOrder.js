@@ -1,15 +1,11 @@
-
 import api from "../utils/axios"
 
-const getCurrentUser=async () => {
-    
+export const createOrder = async (plan) => {
     try {
-        const {data}=await api.get("/api/me")
+        const { data } = await api.post("/api/billing/create", { plan })
         return data
     } catch (error) {
         console.log(error)
         return null
     }
 }
-
-export default getCurrentUser

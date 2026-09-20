@@ -31,3 +31,6 @@ build/
 backend/services/auth/serviceAccountKey.json
 .session_store.json
 **/.session_store.json
+**/.store.json
+backend/services/agent/temp/
+test-rag.txt
