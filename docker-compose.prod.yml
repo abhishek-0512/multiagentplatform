@@ -117,7 +117,7 @@ services:
       - CHAT_SERVICE=http://chat:8002
       - AGENT_SERVICE=http://agent:8003
       - BILLING_SERVICE=http://billing:8004
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - FRONTEND_URL=http://13.200.147.231
       - REDIS_URL=redis://redis:6379
     networks:
       - multiagent-net
