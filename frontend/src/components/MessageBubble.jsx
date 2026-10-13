@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -15,11 +15,9 @@ import {
   FileText,
   Globe,
   Image as ImageIcon,
-  Layers,
   MessageSquare,
   Presentation,
   Sparkles,
-  Zap,
   X
 } from 'lucide-react'
 import { setArtifacts } from '../redux/messageSlice'
@@ -187,17 +185,33 @@ function MessageBubble({ role, agent, content, images = [], artifacts = [], sour
         {/* Standalone Images */}
         {standaloneImages.length > 0 && (
           <div className='flex flex-wrap gap-3 mb-3'>
-            {standaloneImages.map((img, i) => (
-              <div key={i} className="relative group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
-                <img
-                  src={img}
-                  alt="Generated visual"
-                  onClick={() => setLightBox(img)}
-                  loading="lazy"
-                  className="w-full max-w-[360px] max-h-[280px] rounded-xl object-contain cursor-zoom-in group-hover:scale-[1.02] transition duration-200"
-                />
-              </div>
-            ))}
+            {standaloneImages.map((img, i) => {
+              // Convert view URL to download URL for the button
+              const downloadHref = img.replace("/api/agent/file/", "/api/agent/download/")
+              return (
+                <div key={i} className="relative group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
+                  <img
+                    src={img}
+                    alt="Generated visual"
+                    onClick={() => setLightBox(img)}
+                    loading="lazy"
+                    className="w-full max-w-[360px] max-h-[280px] rounded-xl object-contain cursor-zoom-in group-hover:scale-[1.02] transition duration-200"
+                  />
+                  {/* Download button overlay */}
+                  <a
+                    href={downloadHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-semibold shadow-md no-underline backdrop-blur-sm"
+                    title="Download Image"
+                  >
+                    <Download size={12} />
+                    <span>Download</span>
+                  </a>
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -241,12 +255,11 @@ function MessageBubble({ role, agent, content, images = [], artifacts = [], sour
               </td>
             ),
             a: ({ href, children }) => {
-              const isDownload = href?.includes("download") || /\.(pdf|pptx|png|jpg|jpeg)$/i.test(href || "")
+              const isDownload = href?.includes("/api/agent/download") || href?.includes("/api/agent/file")
               return (
                 <a
                   href={href}
-                  target={isDownload ? "_self" : "_blank"}
-                  download={isDownload}
+                  target="_blank"
                   rel="noreferrer"
                   className={
                     isDownload
@@ -411,6 +424,18 @@ function MessageBubble({ role, agent, content, images = [], artifacts = [], sour
           >
             <X size={18} />
           </button>
+          {/* Download from lightbox */}
+          <a
+            href={lightBox.replace("/api/agent/file/", "/api/agent/download/")}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className='absolute top-5 left-5 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition no-underline border-none cursor-pointer backdrop-blur-sm'
+            title="Download Image"
+          >
+            <Download size={14} />
+            <span>Download</span>
+          </a>
           <img
             src={lightBox}
             alt="Preview"

@@ -1,0 +1,96 @@
+
+name: Test and Deploy Nexora AI
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: nexora-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test image agent and build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/services/agent/package-lock.json
+
+      - name: Test image prompt engine
+        run: |
+          npm ci --prefix backend/services/agent
+          npm test --prefix backend/services/agent
+
+      - name: Build frontend
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+
+  deploy:
+    name: Deploy to existing EC2
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Verify existing production setup
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "ubuntu@$EC2_HOST" \
+            'test -f "$HOME/app/.env" &&
+             test -f "$HOME/app/docker-compose.prod.yml"'
+
+      - name: Sync application files
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          rsync -az \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='deploy-key.pem' \
+            --exclude='*.backup' \
+            --exclude='audit-report.json' \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='dist' \
+            --exclude='.DS_Store' \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ "ubuntu@$EC2_HOST:~/app/"
+
+      - name: Validate and update services
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "ubuntu@$EC2_HOST" 'bash -se' <<'REMOTE'
+            set -euo pipefail
+            cd "$HOME/app"
+
+            test -f .env
+            sudo docker compose -f docker-compose.prod.yml config --quiet
+            sudo docker compose -f docker-compose.prod.yml up -d --build
+            sudo docker compose -f docker-compose.prod.yml ps
+          REMOTE

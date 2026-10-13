@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
-  Bot,
   Code2,
   FileSpreadsheet,
   FileText,
@@ -13,7 +12,6 @@ import {
   Paperclip,
   Presentation,
   Send,
-  Sparkles,
   X,
   Zap
 } from 'lucide-react'
@@ -25,6 +23,7 @@ import { updateConversation } from '../features/updateConversation'
 
 function ChatInput() {
   const [value, setValue] = useState("")
+  const [aspectRatio, setAspectRatio] = useState("1:1")
   const { selectedConversation } = useSelector(state => state.conversation)
   const { isLoading, activeAgent } = useSelector(state => state.message)
   const [selectedFile, setSelectedFile] = useState(null)
@@ -77,7 +76,7 @@ function ChatInput() {
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setMicError("Microphone permission denied. Please allow microphone access in your browser.")
       } else if (event.error === "no-speech") {
-        // No speech detected
+        /* No speech detected - no action needed */
       } else {
         setMicError(`Voice error: ${event.error}`)
       }
@@ -94,7 +93,9 @@ function ChatInput() {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop()
-        } catch {}
+        } catch {
+          /* ignore shutdown errors */
+        }
       }
     }
   }, [])
@@ -109,7 +110,9 @@ function ChatInput() {
     if (listening) {
       try {
         recognitionRef.current.stop()
-      } catch {}
+      } catch {
+        /* ignore stop error */
+      }
       setListening(false)
     } else {
       setMicError(null)
@@ -125,7 +128,9 @@ function ChatInput() {
             recognitionRef.current.start()
             setListening(true)
           }, 150)
-        } catch {}
+        } catch {
+          /* ignore retry error */
+        }
       }
     }
   }
@@ -137,12 +142,14 @@ function ChatInput() {
     if (listening && recognitionRef.current) {
       try {
         recognitionRef.current.stop()
-      } catch {}
+      } catch {
+        /* ignore stop error */
+      }
       setListening(false)
     }
 
     dispatch(setIsLoading(true))
-    
+
     // Set dynamic execution status
     if (activeAgent === "auto") {
       dispatch(setExecutingStatus("Analyzing intent & routing to agent..."))
@@ -181,6 +188,9 @@ function ChatInput() {
     formData.append("prompt", value.trim())
     formData.append("conversationId", conversation?._id)
     formData.append("agent", activeAgent.toLowerCase())
+    if (isAgentActive("vision") && aspectRatio) {
+      formData.append("aspectRatio", aspectRatio)
+    }
     if (selectedFile) {
       formData.append("file", selectedFile)
     }
@@ -196,7 +206,7 @@ function ChatInput() {
     dispatch(setIsLoading(false))
     dispatch(setExecutingStatus(""))
 
-    // DYNAMIC ACTIVE AGENT UPDATE: Update activeAgent from backend router result
+    // Dynamic Active Agent Update from backend
     if (data?.agent) {
       const normalizedAgent = data.agent.toLowerCase()
       dispatch(setActiveAgent(normalizedAgent))
@@ -294,7 +304,7 @@ function ChatInput() {
   return (
     <div className='w-full overflow-hidden px-3 md:px-6 py-3 border-t border-slate-200/80 bg-[#f8fafc]'>
       <div className='flex flex-col gap-2.5 bg-white border border-slate-200 shadow-xs rounded-2xl px-3.5 pt-3 pb-2.5 relative max-w-4xl mx-auto'>
-        
+
         {/* Agent Selector Pills */}
         <div className='flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
           {agents.map((agent) => {
@@ -336,6 +346,33 @@ function ChatInput() {
           })}
         </div>
 
+        {/* Vision Agent Aspect Ratio Selector */}
+        {isAgentActive("vision") && (
+          <div className='flex items-center gap-1.5 overflow-x-auto py-1 border-t border-slate-100 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+            <span className='text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0 mr-1'>Aspect Ratio:</span>
+            {[
+              { id: "1:1", label: "1:1 Square" },
+              { id: "16:9", label: "16:9 Landscape" },
+              { id: "9:16", label: "9:16 Story" },
+              { id: "4:3", label: "4:3 Classic" },
+              { id: "3:4", label: "3:4 Portrait" }
+            ].map(aspect => (
+              <button
+                key={aspect.id}
+                type="button"
+                onClick={() => setAspectRatio(aspect.id)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition cursor-pointer border ${
+                  aspectRatio === aspect.id
+                    ? "bg-rose-50 text-rose-700 border-rose-200 font-semibold shadow-2xs"
+                    : "bg-slate-50 text-slate-500 border-slate-200/80 hover:bg-slate-100"
+                }`}
+              >
+                {aspect.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Selected File Attached Pill + Quick Action Chips */}
         {selectedFile && fileBadge && (
           <div className='my-1 space-y-2'>
@@ -369,41 +406,6 @@ function ChatInput() {
                 <X size={13} />
               </button>
             </div>
-
-            {/* Document Quick Action Chips */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-slate-500 font-medium mr-1">Quick Actions:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setValue("Analyze this document in detail and extract the core facts and takeaways.")
-                  textareaRef.current?.focus()
-                }}
-                className="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 transition cursor-pointer"
-              >
-                Analyze Document
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setValue("Create a comprehensive PDF report based on this analyzed document.")
-                  textareaRef.current?.focus()
-                }}
-                className="px-2.5 py-1 text-[11px] rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer"
-              >
-                Create PDF Report
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setValue("Create a 6-slide presentation deck based on this analyzed document.")
-                  textareaRef.current?.focus()
-                }}
-                className="px-2.5 py-1 text-[11px] rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition cursor-pointer"
-              >
-                Create PPT Deck
-              </button>
-            </div>
           </div>
         )}
 
@@ -431,7 +433,7 @@ function ChatInput() {
         {/* Textarea Input */}
         <textarea
           ref={textareaRef}
-          placeholder={selectedFile ? `Ask Nexora about ${selectedFile.name}...` : 'Ask Nexora anything, analyze documents, write code...'}
+          placeholder={selectedFile ? `Ask Nexora about ${selectedFile.name}...` : 'Ask Nexora anything, generate photorealistic visuals, write code...'}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           value={value}

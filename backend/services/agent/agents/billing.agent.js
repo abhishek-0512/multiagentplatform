@@ -21,8 +21,9 @@ export const billingAgent = async (state) => {
         let user = null
         if (state.userId) {
             try {
-                // Fetch user from auth service
-                const userRes = await axios.get(`http://127.0.0.1:8001/user/${state.userId}`).catch(() => null)
+                // Fetch user from auth service using dynamic service URL
+                const authUrl = process.env.AUTH_SERVICE || "http://auth:8001"
+                const userRes = await axios.get(`${authUrl}/user/${state.userId}`, { timeout: 3500 }).catch(() => null)
                 user = userRes?.data
             } catch (e) {}
         }

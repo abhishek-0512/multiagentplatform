@@ -89,6 +89,21 @@ export const verifyPayment = async (req, res) => {
             return res.status(404).json({ message: "Payment record not found for this order" })
         }
 
+        // Idempotency guard: Prevent duplicate credit allocation on retried requests
+        if (payment.status === "paid") {
+            console.log(`[Billing] Idempotent payment check: Order ${razorpay_order_id} already marked paid`)
+            return res.status(200).json({
+                success: true,
+                message: `Order already verified and processed.`,
+                payment: {
+                    orderId: payment.orderId,
+                    paymentId: payment.paymentId,
+                    plan: payment.plan,
+                    amount: payment.amount
+                }
+            })
+        }
+
         payment.status = "paid"
         payment.paymentId = razorpay_payment_id
         await payment.save()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { AnimatePresence, motion } from "motion/react"
 import { Check, Crown, Loader2, Sparkles, X, Zap } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'

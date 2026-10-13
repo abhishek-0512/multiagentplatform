@@ -104,7 +104,7 @@ function resolveLiveTime(query) {
     if (!isTimeQuery) return null
 
     // Check for pure date/day query
-    if (/^(today'?s date|current date|what is the date|what is today'?s date|what date is it|what day is today|what day is it)$/i.test(lower.trim())) {
+    if (/\b(today'?s date|current date|what date|what is the date|what'?s the date|what day is today|what day is it|which day is today|current year|which year)\b/i.test(lower) && !/\b(time|clock)\b/i.test(lower)) {
         const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" }).format(now)
         return {
             type: "DATE",
@@ -224,7 +224,7 @@ async function fetchRealTimeWeather(query) {
 // ==========================================
 async function fetchLiveFinance(query) {
     const lower = query.toLowerCase()
-    
+
     // Crypto Detection (Bitcoin, Ethereum, Solana, Doge, etc.)
     const isCrypto = /\b(bitcoin|btc|ethereum|eth|solana|sol|dogecoin|doge|crypto|cryptocurrency)\b/i.test(lower)
     if (isCrypto && /\b(price|rate|cost|value|worth|trading at|current)\b/i.test(lower)) {
@@ -363,7 +363,7 @@ export const searchAgent = async (state) => {
         // If simple temperature query with live sensor data, return crisp, exact response
         if (isSimpleTempQuery && liveWeather) {
             const tempAnswer = `The current temperature in **${liveWeather.location}** is **${liveWeather.tempC}°C (${liveWeather.tempF}°F)** with **${liveWeather.condition}** (Feels like ${liveWeather.feelsC}°C, Humidity: ${liveWeather.humidity}%).`
-            
+
             await deductCredits(state.userId, "search").catch(() => {})
             await saveAgentContext(conversationId, {
                 agent: "search",
@@ -396,19 +396,35 @@ export const searchAgent = async (state) => {
         }
 
         console.log(`[SearchAgent] Executing web search for: "${searchQuery}"`)
-        const results = await searchTool.invoke({
-            query: searchQuery
-        })
+        let rawResults = null
+        const tavilyApiKey = (process.env.TAVILY_API_KEY || "").trim()
+
+        if (tavilyApiKey) {
+            try {
+                const directRes = await axios.post("https://api.tavily.com/search", {
+                    api_key: tavilyApiKey,
+                    query: searchQuery,
+                    max_results: 5,
+                    include_images: true
+                }, { timeout: 10000 })
+                rawResults = directRes.data
+            } catch (apiErr) {
+                console.warn("[SearchAgent] Direct Tavily API warning:", apiErr.message)
+            }
+        }
+
+        if (!rawResults || !rawResults.results) {
+            try {
+                const toolResults = await searchTool.invoke({ query: searchQuery })
+                rawResults = typeof toolResults === "string" ? JSON.parse(toolResults) : toolResults
+            } catch (toolErr) {
+                console.warn("[SearchAgent] Tavily tool wrapper error:", toolErr.message)
+            }
+        }
+
         await deductCredits(state.userId, "search").catch(() => {})
 
         let sources = []
-        let rawResults = results
-        if (typeof results === "string") {
-            try {
-                rawResults = JSON.parse(results)
-            } catch (e) {}
-        }
-
         if (Array.isArray(rawResults)) {
             sources = rawResults.map(r => ({
                 title: r.title || r.name || "Web Source",
@@ -489,7 +505,7 @@ CORE BEHAVIOR RULES (GPT & GEMINI STYLE):
             ...state,
             agent: "search",
             nextAgent: state.nextAgent || null,
-            searchResults: results,
+            searchResults: rawResults || [],
             sources: sources,
             images: returnedImages,
             aiResponse: answerText

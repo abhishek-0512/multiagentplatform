@@ -161,7 +161,7 @@ INSTRUCTIONS:
         const zipFilePath = path.join(tempDir, zipFilename)
         fs.writeFileSync(zipFilePath, zipBuffer)
 
-        const downloadUrl = `http://localhost:8000/api/agent/download/${zipFilename}`
+        const downloadUrl = `/api/agent/download/${zipFilename}`
         await uploadToS3(zipFilename, zipBuffer, "application/zip").catch(() => {})
 
         console.log(`[CODE] Project workspace created at ${tempProjectsDir} (${files.length} files, ZIP: ${zipBuffer.length} bytes)`)
@@ -264,22 +264,22 @@ function ensureWebStackCompleteness(files, prompt) {
       <button class="btn" data-action="percent">%</button>
       <button class="btn btn-op" data-action="divide">/</button>
       <button class="btn btn-op" data-action="multiply">*</button>
-      
+
       <button class="btn btn-num">7</button>
       <button class="btn btn-num">8</button>
       <button class="btn btn-num">9</button>
       <button class="btn btn-op" data-action="subtract">-</button>
-      
+
       <button class="btn btn-num">4</button>
       <button class="btn btn-num">5</button>
       <button class="btn btn-num">6</button>
       <button class="btn btn-op" data-action="add">+</button>
-      
+
       <button class="btn btn-num">1</button>
       <button class="btn btn-num">2</button>
       <button class="btn btn-num">3</button>
       <button class="btn btn-equals" data-action="equals">=</button>
-      
+
       <button class="btn btn-num btn-zero">0</button>
       <button class="btn btn-num">.</button>
     </div>

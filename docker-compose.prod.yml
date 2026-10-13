@@ -1,0 +1,147 @@
+services:
+  # In-memory store and caching
+  redis:
+    image: redis:7-alpine
+    container_name: multiagent-redis
+    restart: always
+    command: redis-server --save "" --appendonly no
+    networks:
+      - multiagent-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Authentication Service
+  auth:
+    build:
+      context: ./backend
+      dockerfile: services/auth/Dockerfile
+    image: multiagent-auth:latest
+    container_name: multiagent-auth
+    restart: always
+    environment:
+      - PORT=8001
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - multiagent-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Chat Service
+  chat:
+    build:
+      context: ./backend
+      dockerfile: services/chat/Dockerfile
+    image: multiagent-chat:latest
+    container_name: multiagent-chat
+    restart: always
+    environment:
+      - PORT=8002
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - multiagent-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Agent Service (AI reasoning, LangGraph, Tools)
+  agent:
+    build:
+      context: ./backend
+      dockerfile: services/agent/Dockerfile
+    image: multiagent-agent:latest
+    container_name: multiagent-agent
+    restart: always
+    environment:
+      - PORT=8003
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE=http://auth:8001
+      - CHAT_SERVICE=http://chat:8002
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-multiagent-platform}
+    networks:
+      - multiagent-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Billing Service (Razorpay subscriptions/plans)
+  billing:
+    build:
+      context: ./backend
+      dockerfile: services/billing/Dockerfile
+    image: multiagent-billing:latest
+    container_name: multiagent-billing
+    restart: always
+    environment:
+      - PORT=8004
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE=http://auth:8001
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+    networks:
+      - multiagent-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # API Gateway (Routing & Proxying)
+  gateway:
+    build:
+      context: ./backend
+      dockerfile: gateway/Dockerfile
+    image: multiagent-gateway:latest
+    container_name: multiagent-gateway
+    restart: always
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE=http://auth:8001
+      - CHAT_SERVICE=http://chat:8002
+      - AGENT_SERVICE=http://agent:8003
+      - BILLING_SERVICE=http://billing:8004
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - multiagent-net
+    depends_on:
+      - auth
+      - chat
+      - agent
+      - billing
+
+  # Frontend Web Client & Nginx Reverse Proxy
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: multiagent-frontend:latest
+    container_name: multiagent-frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - multiagent-net
+    depends_on:
+      - gateway
+
+networks:
+  multiagent-net:
+    driver: bridge

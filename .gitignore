@@ -34,3 +34,16 @@ backend/services/auth/serviceAccountKey.json
 **/.store.json
 backend/services/agent/temp/
 test-rag.txt
+
+/deploy-key.pem
+
+/deploy-key.pem
+
+# Local backups and generated audit reports
+*.backup
+frontend/audit-report.json
+
+# Local backups and obsolete agent files
+backend/services/agent/agents/vision.agent.backup.js
+backend/services/agent/utils/imagePromptEnhancer.old.js
+*.backup

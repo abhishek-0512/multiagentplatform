@@ -70,13 +70,17 @@ Rules:
             new SystemMessage(systemPrompt)
         ]
 
-        if (Array.isArray(history)) {
-            history.forEach(msg => {
-                if (msg.role === "user") {
-                    messages.push(new HumanMessage(msg.content))
+        // Context-Window Management: Sliding window of recent turns to avoid token overflow
+        if (Array.isArray(history) && history.length > 0) {
+            const MAX_HISTORY_MESSAGES = 8
+            const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
+            recentHistory.forEach(msg => {
+                const text = String(msg.content || "").slice(0, 1500)
+                if (msg.role === "user" && text) {
+                    messages.push(new HumanMessage(text))
                 }
-                if (msg.role === "assistant" && msg.content) {
-                    messages.push(new AIMessage(msg.content))
+                if (msg.role === "assistant" && text) {
+                    messages.push(new AIMessage(text))
                 }
             })
         }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { AnimatePresence, easeInOut, motion } from "motion/react"
 import Editor from '@monaco-editor/react'
@@ -13,17 +13,11 @@ import {
   Eye,
   FileDown,
   FileText,
-  Layers,
   Maximize2,
   Minimize2,
   PanelRightClose,
   PanelRightOpen,
   Presentation,
-  Sparkles,
-  TrendingUp,
-  Columns,
-  Cpu,
-  GitCommit,
   X
 } from 'lucide-react'
 
@@ -40,8 +34,10 @@ function Artifact() {
 
   const artifact = artifacts?.[0]
   const type = artifact?.type || (artifact?.files?.length ? "Project" : "")
+  const [prevArtifact, setPrevArtifact] = useState(artifact)
 
-  useEffect(() => {
+  if (artifact !== prevArtifact) {
+    setPrevArtifact(artifact)
     setActiveFile(0)
     setActiveSlide(0)
     if (type === "Presentation") {
@@ -51,7 +47,7 @@ function Artifact() {
     } else {
       setTab("code")
     }
-  }, [artifact, type])
+  }
 
   if (!artifact) return null
 
@@ -96,10 +92,10 @@ function Artifact() {
     </style>
 </head>
 <body>
- ${rawHtml} 
+ ${rawHtml}
 <script>
     ${rawJs}
-</script>    
+</script>
 </body>
 </html>`
   }
@@ -552,7 +548,7 @@ function Artifact() {
   }
 
   // ==================== MAIN PANEL ====================
-  const PanelContent = ({ onClose }) => {
+  const renderPanelContent = (onClose) => {
     return (
       <>
         {!collapsed ? (
@@ -769,7 +765,7 @@ function Artifact() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="lg:hidden fixed inset-y-0 right-0 z-50 w-[92vw] max-w-[460px] border-l border-white/[0.06] overflow-hidden"
             >
-              <PanelContent onClose={() => setMobileOpen(false)} />
+              {renderPanelContent(() => setMobileOpen(false))}
             </motion.div>
           </>
         )}
@@ -814,7 +810,7 @@ function Artifact() {
         }}
         className='hidden lg:flex h-full border-l border-slate-200 flex-col overflow-hidden shrink-0'
       >
-        <PanelContent />
+        {renderPanelContent()}
       </motion.div>
     </>
   )

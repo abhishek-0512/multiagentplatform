@@ -99,8 +99,28 @@ export const executeAndVerify = async (files, prompt, criteria = []) => {
                 const { window } = dom
                 const { document } = window
 
-                // Inject & execute JavaScript in standard browser window scope
+                // Pre-execution timeout guard in isolated VM to catch infinite loops or blocking code
                 if (jsFile && jsFile.content) {
+                    try {
+                        const preflightSandbox = {
+                            console: { log: () => {}, warn: () => {}, error: () => {} },
+                            setTimeout: () => {},
+                            setInterval: () => {}
+                        }
+                        const preflightContext = vm.createContext(preflightSandbox)
+                        // Time-boxed evaluation with 1200ms limit
+                        vm.runInContext(
+                            `try { ${jsFile.content} } catch(e) { if (!e.message.includes("document") && !e.message.includes("window")) throw e; }`,
+                            preflightContext,
+                            { timeout: 1200 }
+                        )
+                    } catch (timeoutErr) {
+                        runtimeErrors.push(`Execution safety violation: ${timeoutErr.message} (Timeout / Infinite loop safeguard triggered)`)
+                    }
+                }
+
+                // Inject & execute JavaScript in browser window scope if preflight passed
+                if (jsFile && jsFile.content && runtimeErrors.length === 0) {
                     try {
                         const scriptEl = document.createElement("script")
                         scriptEl.textContent = jsFile.content

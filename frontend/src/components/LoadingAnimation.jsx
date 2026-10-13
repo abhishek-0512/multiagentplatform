@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from "motion/react"
-function LoadingAnimation() {
 
-    const Thinking_Lables = ["Thinking", "Analyzing", "Reasoning", "Generating"]
+const Thinking_Lables = ["Thinking", "Analyzing", "Reasoning", "Generating"]
+
+function LoadingAnimation() {
     const [labelIndex, setLabelIndex] = useState(0)
 
     useEffect(() => {

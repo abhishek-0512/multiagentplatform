@@ -194,7 +194,7 @@ Return ONLY valid JSON matching this schema:
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true })
         fs.writeFileSync(path.join(tempDir, filename), buffer)
 
-        const downloadUrl = `http://localhost:8000/api/agent/download/${filename}`
+        const downloadUrl = `/api/agent/download/${filename}`
         await uploadToS3(filename, buffer, "application/vnd.openxmlformats-officedocument.presentationml.presentation").catch(() => {})
 
         const slideCount = data.slides?.length || targetSlideCount

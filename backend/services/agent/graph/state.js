@@ -8,11 +8,15 @@ export const agentState = Annotation.Root({
     conversationId: Annotation(),
     searchResults: Annotation(),
     images: Annotation(),
+    imageKeys: Annotation(),
     artifacts: Annotation(),
     sources: Annotation(),
     userId: Annotation(),
     file: Annotation(),
     sourceContext: Annotation(),
     structuredData: Annotation(),
-    handoffCount: Annotation()
+    handoffCount: Annotation(),
+    aspectRatio: Annotation(),
+    imageMode: Annotation(),
+    hasContextReference: Annotation()
 })

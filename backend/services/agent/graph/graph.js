@@ -61,8 +61,15 @@ workflow.addConditionalEdges("router", (state) => {
   billing: "billing"
 })
 
+const MAX_HANDOFF_DEPTH = 2;
+
 // Chained handoffs from RAG analysis (e.g. combined prompt: analyze + PDF / PPT)
 workflow.addConditionalEdges("pdfRag", (state) => {
+  const count = state.handoffCount || 0;
+  if (count >= MAX_HANDOFF_DEPTH) {
+    console.warn(`[Orchestrator] Maximum handoff depth reached (${count}). Terminating chain.`);
+    return "__end__";
+  }
   if (state.nextAgent === "pdf") return "pdf";
   if (state.nextAgent === "ppt") return "ppt";
   return "__end__";
@@ -72,8 +79,13 @@ workflow.addConditionalEdges("pdfRag", (state) => {
   __end__: "__end__"
 })
 
-// Chained handoffs from Search
+// Chained handoffs from Search (e.g. research + PDF / PPT report)
 workflow.addConditionalEdges("search", (state) => {
+  const count = state.handoffCount || 0;
+  if (count >= MAX_HANDOFF_DEPTH) {
+    console.warn(`[Orchestrator] Maximum handoff depth reached (${count}). Terminating chain.`);
+    return "__end__";
+  }
   if (state.nextAgent === "pdf") return "pdf";
   if (state.nextAgent === "ppt") return "ppt";
   return "__end__";

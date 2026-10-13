@@ -47,13 +47,36 @@ export const router = async (state) => {
     }
   }
 
-  // 2. Explicit manual selection for RAG
+  // 2. Explicit manual selection from UI
   const rawAgent = (state.agent || "").toLowerCase()
+  if (rawAgent === "search") {
+    return { ...state, agent: "search" }
+  }
+  if (rawAgent === "vision" || rawAgent === "image") {
+    return { ...state, agent: "vision" }
+  }
+  if (rawAgent === "coding") {
+    return { ...state, agent: "coding" }
+  }
+  if (rawAgent === "ppt") {
+    return { ...state, agent: "ppt" }
+  }
+  if (rawAgent === "pdf") {
+    return { ...state, agent: "pdf" }
+  }
   if (rawAgent === "pdfrag" || rawAgent === "rag") {
-    return {
-      ...state,
-      agent: "pdfRag"
-    }
+    return { ...state, agent: "pdfRag" }
+  }
+  if (rawAgent === "billing") {
+    return { ...state, agent: "billing" }
+  }
+  if (rawAgent === "chat") {
+    return { ...state, agent: "chat" }
+  }
+
+  // Live time, date, timezone, clock, weather queries always route to search agent
+  if (/\b(time|what time|time now|clock|timezone|today'?s date|what date|what day|current year|current date|weather|temperature|temp in|temp of)\b/i.test(lower)) {
+    return { ...state, agent: "search" }
   }
 
   // 3. Resolve References to Previous Agent Context (e.g. "this feedback", "this analysis", "the above", "from the research")
@@ -161,9 +184,10 @@ ROUTING EXAMPLES:
 - "create a PDF report of this analysis" -> pdf
 - "now create a pdf of this feedback" -> pdf
 - "solve two sum in Java" -> coding
-- "what is today's date" -> chat
-- "what is the current year" -> chat
-- "what time is it" -> chat
+- "what is today's date" -> search
+- "what is the current year" -> search
+- "what time is it" -> search
+- "current time in Tokyo" -> search
 - "what is the latest news today" -> search
 - "who won the cricket match yesterday" -> search
 - "current stock price of Google" -> search

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Code2,
   CreditCard,
@@ -9,7 +8,6 @@ import {
   MessageSquare,
   Plus,
   Presentation,
-  Sparkles,
   Zap
 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'

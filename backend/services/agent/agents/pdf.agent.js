@@ -169,7 +169,7 @@ Return ONLY valid JSON matching this schema:
         const res = await llm.invoke(promptForLlm)
 
         const rawContent = typeof res.content === "string" ? res.content : JSON.stringify(res.content || "")
-        
+
         let data = null
         const cleaned = rawContent.replace(/```json/gi, "").replace(/```/g, "").trim()
         const match = cleaned.match(/\{[\s\S]*\}/)
@@ -208,8 +208,8 @@ Return ONLY valid JSON matching this schema:
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true })
         fs.writeFileSync(path.join(tempDir, filename), pdfBuffer)
 
-        const fileUrl = `http://localhost:8000/api/agent/file/${filename}`
-        const downloadUrl = `http://localhost:8000/api/agent/download/${filename}`
+        const fileUrl = `/api/agent/file/${filename}`
+        const downloadUrl = `/api/agent/download/${filename}`
         await uploadToS3(filename, pdfBuffer, "application/pdf").catch(() => {})
 
         console.log(`[PDF] Upload successful: ${downloadUrl}`)
@@ -266,7 +266,7 @@ function extractStructuredPdfData(userPrompt = "", sourceContext = null) {
     const rawContext = (sourceContext?.content || sourceContext?.analysis || "").trim()
     const cleanTopic = userPrompt.replace(/^(create|make|generate|export|download|turn into)\s+(a\s+)?(pdf|document|report|cheat sheet)\s*(of|for|about|explaining|containing|on)?\s*/i, "").trim()
     const title = cleanTopic ? cleanTopic.slice(0, 65).replace(/\b\w/g, l => l.toUpperCase()) : "Comprehensive Report"
-    
+
     // Clean text and extract actual factual sentences from sourceContext if present
     const normalizedContext = rawContext
         .replace(/[\r\n\t]+/g, " ")

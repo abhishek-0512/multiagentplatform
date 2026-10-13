@@ -120,7 +120,7 @@ export const updateUserPayment = async (req, res) => {
 export const deductCredits = async (req, res) => {
     try {
         const { userId, agent } = req.body
-        
+
         const COST = {
 
             chat: 1,
@@ -168,8 +168,30 @@ export const deductCredits = async (req, res) => {
             planExpiresAt: user.planExpiresAt
         }), "EX", 7 * 24 * 60 * 60)
 
-        return res.status(200).json({ success: true ,credits:user.credits})
+        return res.status(200).json({ success: true, credits: user.credits })
     } catch (error) {
- return res.status(500).json({ message: `deduct credits error ${error}` })
+        return res.status(500).json({ message: `deduct credits error ${error}` })
+    }
+}
+
+export const getUserById = async (req, res) => {
+    try {
+        const { id } = req.params
+        const user = await User.findById(id).select("-__v")
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+        return res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            plan: user.plan,
+            credits: user.credits,
+            totalCredits: user.totalCredits,
+            planExpiresAt: user.planExpiresAt
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `get user error ${error.message}` })
     }
 }
