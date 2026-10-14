@@ -20,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
           cache: npm
           cache-dependency-path: |
             frontend/package-lock.json
@@ -73,15 +73,17 @@ jobs:
             --exclude='.env.*' \
             --exclude='deploy-key.pem' \
             --exclude='*.backup' \
+            --exclude='*.bak' \
             --exclude='audit-report.json' \
             --exclude='node_modules' \
             --exclude='.git' \
             --exclude='dist' \
             --exclude='.DS_Store' \
+            --exclude='docker-compose.prod.yml' \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./ "ubuntu@$EC2_HOST:~/app/"
 
-      - name: Validate and update services
+      - name: Deploy and verify production
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
@@ -90,7 +92,34 @@ jobs:
             cd "$HOME/app"
 
             test -f .env
+            test -f docker-compose.prod.yml
             sudo docker compose -f docker-compose.prod.yml config --quiet
             sudo docker compose -f docker-compose.prod.yml up -d --build
+
+            echo "Waiting for API gateway health..."
+            for attempt in $(seq 1 18); do
+              if sudo docker compose -f docker-compose.prod.yml exec -T gateway node -e '
+                const http = require("http");
+                const req = http.get("http://127.0.0.1:8000/health", res => {
+                  res.resume();
+                  process.exit(res.statusCode === 200 ? 0 : 1);
+                });
+                req.setTimeout(3000, () => req.destroy(new Error("timeout")));
+                req.on("error", () => process.exit(1));
+              '; then
+                echo "Gateway health check passed."
+                break
+              fi
+
+              if [ "$attempt" -eq 18 ]; then
+                echo "Gateway health check failed."
+                sudo docker compose -f docker-compose.prod.yml ps
+                sudo docker compose -f docker-compose.prod.yml logs --tail=100 gateway
+                exit 1
+              fi
+
+              sleep 5
+            done
+
             sudo docker compose -f docker-compose.prod.yml ps
           REMOTE
