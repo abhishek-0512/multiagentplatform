@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
@@ -16,9 +17,20 @@ import {
   Zap
 } from 'lucide-react'
 import sendMessage from '../features/sendMessage'
-import { addMessage, setActiveAgent, setArtifacts, setExecutingStatus, setIsLoading, setMessages } from '../redux/messageSlice'
+import {
+  addMessage,
+  setActiveAgent,
+  setArtifacts,
+  setExecutingStatus,
+  setIsLoading,
+  setMessages
+} from '../redux/messageSlice'
 import { createConversation } from '../features/createConversation'
-import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
+import {
+  addConversation,
+  setConvTitle,
+  setSelectedConversation
+} from '../redux/conversationSlice'
 import { updateConversation } from '../features/updateConversation'
 
 function ChatInput() {
@@ -38,7 +50,9 @@ function ChatInput() {
 
   // Initialize Speech Recognition
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition
+
     if (!SpeechRecognition) return
 
     const recognition = new SpeechRecognition()
@@ -57,6 +71,7 @@ function ChatInput() {
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
+
         if (event.results[i].isFinal) {
           finalTranscript += transcript + " "
         } else {
@@ -65,21 +80,32 @@ function ChatInput() {
       }
 
       const spoken = (finalTranscript + interimTranscript).trim()
+
       if (spoken) {
-        const prefix = baseTextRef.current ? baseTextRef.current.trim() + " " : ""
+        const prefix = baseTextRef.current
+          ? baseTextRef.current.trim() + " "
+          : ""
+
         setValue(prefix + spoken)
       }
     }
 
     recognition.onerror = (event) => {
       console.warn("Speech recognition error:", event.error)
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        setMicError("Microphone permission denied. Please allow microphone access in your browser.")
+
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed"
+      ) {
+        setMicError(
+          "Microphone permission denied. Please allow microphone access in your browser."
+        )
       } else if (event.error === "no-speech") {
-        /* No speech detected - no action needed */
+        // No speech detected - no action needed
       } else {
         setMicError(`Voice error: ${event.error}`)
       }
+
       setListening(false)
     }
 
@@ -94,16 +120,20 @@ function ChatInput() {
         try {
           recognitionRef.current.stop()
         } catch {
-          /* ignore shutdown errors */
+          // Ignore shutdown errors
         }
       }
     }
   }, [])
 
   const toggleMic = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition
+
     if (!SpeechRecognition || !recognitionRef.current) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.")
+      alert(
+        "Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari."
+      )
       return
     }
 
@@ -111,25 +141,36 @@ function ChatInput() {
       try {
         recognitionRef.current.stop()
       } catch {
-        /* ignore stop error */
+        // Ignore stop errors
       }
+
       setListening(false)
     } else {
       setMicError(null)
       baseTextRef.current = value
+
       try {
         recognitionRef.current.start()
         setListening(true)
       } catch (err) {
         console.warn("Failed to start speech recognition:", err)
+
         try {
           recognitionRef.current.stop()
+
           setTimeout(() => {
-            recognitionRef.current.start()
-            setListening(true)
+            try {
+              recognitionRef.current.start()
+              setListening(true)
+            } catch (retryError) {
+              console.warn(
+                "Failed to restart speech recognition:",
+                retryError
+              )
+            }
           }, 150)
         } catch {
-          /* ignore retry error */
+          // Ignore retry errors
         }
       }
     }
@@ -138,89 +179,168 @@ function ChatInput() {
   const handleSendMessage = async () => {
     if ((!value.trim() && !selectedFile) || isLoading) return
 
-    // Stop voice if listening
+    // Capture the mode used for this request.
+    // The response must not turn Auto into a forced specialist.
+    const requestedAgent = activeAgent || "auto"
+
+    // Stop voice recognition if listening
     if (listening && recognitionRef.current) {
       try {
         recognitionRef.current.stop()
       } catch {
-        /* ignore stop error */
+        // Ignore stop errors
       }
+
       setListening(false)
     }
 
     dispatch(setIsLoading(true))
 
     // Set dynamic execution status
-    if (activeAgent === "auto") {
-      dispatch(setExecutingStatus("Analyzing intent & routing to agent..."))
-    } else if (activeAgent === "coding") {
-      dispatch(setExecutingStatus("Generating multi-file code workspace..."))
-    } else if (activeAgent === "ppt") {
-      dispatch(setExecutingStatus("Designing structured presentation deck..."))
-    } else if (activeAgent === "pdf") {
-      dispatch(setExecutingStatus("Compiling publication PDF report..."))
-    } else if (activeAgent === "pdfRag" || activeAgent === "rag") {
-      dispatch(setExecutingStatus("Parsing document & retrieving context..."))
-    } else if (activeAgent === "vision") {
-      dispatch(setExecutingStatus("Synthesizing prompt-specific visual..."))
-    } else if (activeAgent === "search") {
-      dispatch(setExecutingStatus("Querying real-time web sources..."))
+    if (requestedAgent === "auto") {
+      dispatch(
+        setExecutingStatus("Analyzing intent & routing to agent...")
+      )
+    } else if (requestedAgent === "coding") {
+      dispatch(
+        setExecutingStatus("Generating multi-file code workspace...")
+      )
+    } else if (requestedAgent === "ppt") {
+      dispatch(
+        setExecutingStatus("Designing structured presentation deck...")
+      )
+    } else if (requestedAgent === "pdf") {
+      dispatch(
+        setExecutingStatus("Compiling publication PDF report...")
+      )
+    } else if (
+      requestedAgent === "pdfRag" ||
+      requestedAgent.toLowerCase() === "rag"
+    ) {
+      dispatch(
+        setExecutingStatus("Parsing document & retrieving context...")
+      )
+    } else if (
+      ["vision", "image", "imageanalyzer"].includes(
+        requestedAgent.toLowerCase()
+      )
+    ) {
+      dispatch(
+        setExecutingStatus("Synthesizing prompt-specific visual...")
+      )
+    } else if (requestedAgent === "search") {
+      dispatch(
+        setExecutingStatus("Querying real-time web sources...")
+      )
     } else {
       dispatch(setExecutingStatus("Processing request..."))
     }
 
-    let conversation = selectedConversation
-    if (!conversation) {
-      dispatch(setMessages([]))
-      const conv = await createConversation()
-      dispatch(setSelectedConversation(conv))
-      dispatch(addConversation(conv))
-      conversation = conv
+    try {
+      let conversation = selectedConversation
+
+      if (!conversation) {
+        dispatch(setMessages([]))
+
+        const conv = await createConversation()
+
+        dispatch(setSelectedConversation(conv))
+        dispatch(addConversation(conv))
+
+        conversation = conv
+      }
+
+      if (conversation?.title === "New Chat" && value.trim()) {
+        const displayTitle = value.trim().slice(0, 40)
+
+        await updateConversation({
+          id: conversation?._id,
+          title: displayTitle
+        }).catch(() => {})
+
+        dispatch(
+          setConvTitle({
+            conversationId: conversation?._id,
+            title: displayTitle
+          })
+        )
+      }
+
+      const formData = new FormData()
+
+      formData.append("prompt", value.trim())
+      formData.append("conversationId", conversation?._id)
+      formData.append("agent", requestedAgent.toLowerCase())
+
+      if (
+        requestedAgent.toLowerCase() === "vision" &&
+        aspectRatio
+      ) {
+        formData.append("aspectRatio", aspectRatio)
+      }
+
+      if (selectedFile) {
+        formData.append("file", selectedFile)
+      }
+
+      const currentPrompt =
+        value.trim() ||
+        (selectedFile ? `Uploaded ${selectedFile.name}` : "")
+
+      dispatch(
+        addMessage({
+          role: "user",
+          content: currentPrompt
+        })
+      )
+
+      setValue("")
+      baseTextRef.current = ""
+      setSelectedFile(null)
+
+      if (fileRef.current) {
+        fileRef.current.value = ""
+      }
+
+      const data = await sendMessage(formData)
+
+      // FIX: Preserve Auto mode after the backend selects an agent.
+      // Only update the selected agent if the user explicitly chose
+      // a specialist before sending this request.
+      if (data?.agent && requestedAgent !== "auto") {
+        const normalizedAgent = data.agent.toLowerCase()
+        dispatch(setActiveAgent(normalizedAgent))
+      }
+
+      dispatch(setArtifacts(data?.artifacts || []))
+
+      dispatch(
+        addMessage({
+          role: "assistant",
+          agent: data?.agent || requestedAgent,
+          content: data?.answer,
+          images: data?.images,
+          artifacts: data?.artifacts,
+          sources: data?.sources
+        })
+      )
+    } catch (error) {
+      console.error("Failed to send message:", error)
+
+      dispatch(
+        addMessage({
+          role: "assistant",
+          agent: requestedAgent,
+          content:
+            error?.response?.data?.message ||
+            error?.message ||
+            "Sorry, something went wrong while processing your request. Please try again."
+        })
+      )
+    } finally {
+      dispatch(setIsLoading(false))
+      dispatch(setExecutingStatus(""))
     }
-
-    if (conversation?.title === "New Chat" && value.trim()) {
-      const displayTitle = value.trim().slice(0, 40)
-      await updateConversation({ id: conversation?._id, title: displayTitle }).catch(() => {})
-      dispatch(setConvTitle({ conversationId: conversation?._id, title: displayTitle }))
-    }
-
-    const formData = new FormData()
-    formData.append("prompt", value.trim())
-    formData.append("conversationId", conversation?._id)
-    formData.append("agent", activeAgent.toLowerCase())
-    if (isAgentActive("vision") && aspectRatio) {
-      formData.append("aspectRatio", aspectRatio)
-    }
-    if (selectedFile) {
-      formData.append("file", selectedFile)
-    }
-
-    const currentPrompt = value.trim() || (selectedFile ? `Uploaded ${selectedFile.name}` : "")
-    dispatch(addMessage({ role: "user", content: currentPrompt }))
-    setValue("")
-    baseTextRef.current = ""
-    setSelectedFile(null)
-    if (fileRef.current) fileRef.current.value = ""
-
-    const data = await sendMessage(formData)
-    dispatch(setIsLoading(false))
-    dispatch(setExecutingStatus(""))
-
-    // Dynamic Active Agent Update from backend
-    if (data?.agent) {
-      const normalizedAgent = data.agent.toLowerCase()
-      dispatch(setActiveAgent(normalizedAgent))
-    }
-
-    dispatch(setArtifacts(data?.artifacts || []))
-    dispatch(addMessage({
-      role: "assistant",
-      agent: data?.agent || activeAgent,
-      content: data?.answer,
-      images: data?.images,
-      artifacts: data?.artifacts,
-      sources: data?.sources
-    }))
   }
 
   const handleKeyDown = (e) => {
@@ -230,9 +350,10 @@ function ChatInput() {
     }
   }
 
-  // Detect file category icon & color
+  // Detect file category icon and color
   const getFileBadge = (file) => {
     if (!file) return null
+
     const name = file.name.toLowerCase()
     const mime = file.type || ""
 
@@ -244,7 +365,12 @@ function ChatInput() {
         label: "PDF Document"
       }
     }
-    if (name.endsWith(".docx") || name.endsWith(".doc") || mime.includes("word")) {
+
+    if (
+      name.endsWith(".docx") ||
+      name.endsWith(".doc") ||
+      mime.includes("word")
+    ) {
       return {
         icon: FileText,
         color: "text-blue-400",
@@ -252,7 +378,15 @@ function ChatInput() {
         label: "Word Document"
       }
     }
-    if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv") || mime.includes("spreadsheet") || mime.includes("excel") || mime === "text/csv") {
+
+    if (
+      name.endsWith(".xlsx") ||
+      name.endsWith(".xls") ||
+      name.endsWith(".csv") ||
+      mime.includes("spreadsheet") ||
+      mime.includes("excel") ||
+      mime === "text/csv"
+    ) {
       return {
         icon: FileSpreadsheet,
         color: "text-emerald-400",
@@ -260,12 +394,14 @@ function ChatInput() {
         label: name.endsWith(".csv") ? "CSV Dataset" : "Excel Sheet"
       }
     }
+
     if (mime.startsWith("image/")) {
       return {
         isImage: true,
         label: "Image Attachment"
       }
     }
+
     return {
       icon: FileText,
       color: "text-violet-400",
@@ -276,7 +412,10 @@ function ChatInput() {
 
   const formatFileSize = (bytes = 0) => {
     if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`
+    if (bytes < 1024 * 1024) {
+      return `${Math.ceil(bytes / 1024)} KB`
+    }
+
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
@@ -293,23 +432,37 @@ function ChatInput() {
 
   const fileBadge = getFileBadge(selectedFile)
 
-  // Map active agent key for normalized comparison
+  // Normalize active agent for comparisons
   const normalizedActiveKey = (activeAgent || "auto").toLowerCase()
+
   const isAgentActive = (agentId) => {
-    if (agentId === "pdfRag" && (normalizedActiveKey === "pdfrag" || normalizedActiveKey === "rag")) return true
-    if (agentId === "vision" && (normalizedActiveKey === "vision" || normalizedActiveKey === "image" || normalizedActiveKey === "imageanalyzer")) return true
+    if (
+      agentId === "pdfRag" &&
+      ["pdfrag", "rag"].includes(normalizedActiveKey)
+    ) {
+      return true
+    }
+
+    if (
+      agentId === "vision" &&
+      ["vision", "image", "imageanalyzer"].includes(normalizedActiveKey)
+    ) {
+      return true
+    }
+
     return normalizedActiveKey === agentId.toLowerCase()
   }
 
   return (
-    <div className='w-full overflow-hidden px-3 md:px-6 py-3 border-t border-slate-200/80 bg-[#f8fafc]'>
-      <div className='flex flex-col gap-2.5 bg-white border border-slate-200 shadow-xs rounded-2xl px-3.5 pt-3 pb-2.5 relative max-w-4xl mx-auto'>
+    <div className="w-full overflow-hidden px-3 md:px-6 py-3 border-t border-slate-200/80 bg-[#f8fafc]">
+      <div className="flex flex-col gap-2.5 bg-white border border-slate-200 shadow-xs rounded-2xl px-3.5 pt-3 pb-2.5 relative max-w-4xl mx-auto">
 
         {/* Agent Selector Pills */}
-        <div className='flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {agents.map((agent) => {
             const active = isAgentActive(agent.id)
             const Icon = agent.icon
+
             return (
               <button
                 key={agent.id}
@@ -334,10 +487,19 @@ function ChatInput() {
                     : "bg-slate-50 text-slate-600 border-slate-200/90 hover:bg-slate-100 hover:text-slate-900"
                   }
                 `}
-                title={agent.id === "auto" ? "Intelligent Automatic Intent Routing" : `Force ${agent.label} Specialist`}
+                title={
+                  agent.id === "auto"
+                    ? "Intelligent Automatic Intent Routing"
+                    : `Force ${agent.label} Specialist`
+                }
               >
-                <Icon size={12} className={active ? "text-white" : agent.color} />
+                <Icon
+                  size={12}
+                  className={active ? "text-white" : agent.color}
+                />
+
                 <span>{agent.label}</span>
+
                 {active && (
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse shrink-0" />
                 )}
@@ -348,8 +510,11 @@ function ChatInput() {
 
         {/* Vision Agent Aspect Ratio Selector */}
         {isAgentActive("vision") && (
-          <div className='flex items-center gap-1.5 overflow-x-auto py-1 border-t border-slate-100 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-            <span className='text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0 mr-1'>Aspect Ratio:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 border-t border-slate-100 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+              Aspect Ratio:
+            </span>
+
             {[
               { id: "1:1", label: "1:1 Square" },
               { id: "16:9", label: "16:9 Landscape" },
@@ -373,10 +538,10 @@ function ChatInput() {
           </div>
         )}
 
-        {/* Selected File Attached Pill + Quick Action Chips */}
+        {/* Selected File Attachment */}
         {selectedFile && fileBadge && (
-          <div className='my-1 space-y-2'>
-            <div className='inline-flex items-center gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs text-indigo-950'>
+          <div className="my-1 space-y-2">
+            <div className="inline-flex items-center gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs text-indigo-950">
               {fileBadge.isImage ? (
                 <img
                   src={URL.createObjectURL(selectedFile)}
@@ -384,22 +549,33 @@ function ChatInput() {
                   className="h-8 w-8 rounded-lg object-cover border border-slate-200"
                 />
               ) : (
-                <fileBadge.icon size={16} className={fileBadge.color} />
+                (() => {
+                  const FileIcon = fileBadge.icon
+                  return (
+                    <FileIcon size={16} className={fileBadge.color} />
+                  )
+                })()
               )}
+
               <div className="min-w-0">
-                <p className='text-xs font-semibold text-slate-800 truncate max-w-[240px]'>
+                <p className="text-xs font-semibold text-slate-800 truncate max-w-[240px]">
                   {selectedFile.name}
                 </p>
-                <p className='text-[10px] text-slate-500 font-mono'>
+
+                <p className="text-[10px] text-slate-500 font-mono">
                   {fileBadge.label} • {formatFileSize(selectedFile.size)}
                 </p>
               </div>
+
               <button
                 type="button"
-                className='p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer border-none bg-transparent'
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer border-none bg-transparent"
                 onClick={() => {
                   setSelectedFile(null)
-                  if (fileRef.current) fileRef.current.value = ""
+
+                  if (fileRef.current) {
+                    fileRef.current.value = ""
+                  }
                 }}
                 title="Remove attachment"
               >
@@ -409,11 +585,16 @@ function ChatInput() {
           </div>
         )}
 
-        {/* Mic Error Banner if any */}
+        {/* Microphone Error Banner */}
         {micError && (
           <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex items-center justify-between">
             <span>{micError}</span>
-            <button onClick={() => setMicError(null)} className="text-amber-600 hover:text-amber-900 border-none bg-transparent cursor-pointer">
+
+            <button
+              type="button"
+              onClick={() => setMicError(null)}
+              className="text-amber-600 hover:text-amber-900 border-none bg-transparent cursor-pointer"
+            >
               <X size={12} />
             </button>
           </div>
@@ -423,17 +604,24 @@ function ChatInput() {
         {listening && (
           <div className="flex items-center gap-2 px-2 py-0.5 text-xs text-red-600">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
             </span>
-            <span className="font-medium animate-pulse">Listening... speak now</span>
+
+            <span className="font-medium animate-pulse">
+              Listening... speak now
+            </span>
           </div>
         )}
 
         {/* Textarea Input */}
         <textarea
           ref={textareaRef}
-          placeholder={selectedFile ? `Ask Nexora about ${selectedFile.name}...` : 'Ask Nexora anything, generate photorealistic visuals, write code...'}
+          placeholder={
+            selectedFile
+              ? `Ask Nexora about ${selectedFile.name}...`
+              : "Ask Nexora anything, generate photorealistic visuals, write code..."
+          }
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           value={value}
@@ -442,9 +630,9 @@ function ChatInput() {
         />
 
         {/* Bottom Controls Bar */}
-        <div className='flex items-center justify-between pt-1'>
-          <div className='flex items-center gap-1.5'>
-            {/* Multi-Format File Input */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1.5">
+            {/* File Input */}
             <input
               type="file"
               accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.json,.md,image/*"
@@ -452,18 +640,19 @@ function ChatInput() {
               ref={fileRef}
               onChange={(e) => {
                 const file = e.target.files?.[0]
+
                 if (file) {
                   setSelectedFile(file)
-                  if (activeAgent === "auto") {
-                    dispatch(setActiveAgent("pdfRag"))
-                  }
+
+                  // Keep Auto selected for automatic file-intent routing.
+                  // The backend can route the uploaded file to the right agent.
                 }
               }}
             />
 
             <button
               type="button"
-              className='flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition border-none bg-transparent cursor-pointer'
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition border-none bg-transparent cursor-pointer"
               onClick={() => fileRef.current?.click()}
               title="Attach Document (PDF, Word, Excel, CSV, Text) or Image"
             >
@@ -479,7 +668,11 @@ function ChatInput() {
                   ? "bg-red-500 text-white shadow-xs animate-pulse"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 bg-transparent"
               }`}
-              title={listening ? "Stop Listening" : "Voice Input (Speech to Text)"}
+              title={
+                listening
+                  ? "Stop Listening"
+                  : "Voice Input (Speech to Text)"
+              }
             >
               {listening ? <Mic size={16} /> : <MicOff size={16} />}
             </button>
